@@ -9,6 +9,10 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "d3": "^7.9.0",
+    "graphology": "^0.26.0",
+    "nunjucks": "^3.2.4",
+    "sigma": "^3.0.1",
     "vue": "^3.2.13"
   },
   "devDependencies": {
