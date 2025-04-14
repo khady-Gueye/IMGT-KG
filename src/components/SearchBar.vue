@@ -8,7 +8,7 @@
       
       <div v-if ="results.length"> <!--Si des résultats sont présents, afficher cette section-->
         <!-- On passe les résultats au composant graphe -->
-      <GraphDisplay :triples="results" />  
+      <GraphDisplay />  
           <h3>Results :</h3> <!--Titre pour les résultats-->
           <table>
             <thead>
@@ -105,7 +105,7 @@ export default {
   });
 
 
-        
+        this.$emit("update-results", this.results);
       } catch (error) {
         this.errorMessage = "Erreur lors de la récupération des données.";
         console.error(error);

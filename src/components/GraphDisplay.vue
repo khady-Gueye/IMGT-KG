@@ -18,15 +18,23 @@ import Sigma from 'sigma'
 import Graph from 'graphology'
 
 // eslint-disable-next-line no-undef
-const props = defineProps({ // permet de définir les propriétés du composant
-    triples: Array // triples est un tableau d'objets contenant les triples à afficher
-         // [{subject , relation , object}, ...] , array c'est le tableau permettant de stocker les triples
-})
+const props = defineProps({
+  triples: {
+    type: Array,
+    required: true,
+  },
+});
 
 const container = ref(null) // container est une référence à l'élément HTML qui va contenir le graphe
 //let sigmaInstance = null
 
 function afficherGraph(triples) {
+  const containerElement = container.value;
+  if (!containerElement) {
+    console.error("Le conteneur Sigma n'existe pas.");
+    return;
+  }
+
     const graph = new Graph(); // Créer un nouveau graphe vide
    // const positions = {} // Pour stocker les positions des noeuds
 
@@ -73,16 +81,19 @@ function afficherGraph(triples) {
 
 onMounted(()=> {
     container.value= document.getElementById('sigma-container') // Récupérer l'élément HTML qui va contenir le graphe
-    if (props.triples.length > 0) {
-    afficherGraph(props.triples) // Afficher le graphe avec les triples passés en props
-    //console.log(props.triples)
-    //console.log(container.value)
+    if (!props.triples || props.triples.length === 0) {
+        console.log("Aucun triplet à afficher.");
+        return;  // Empêche d'exécuter afficherGraph si pas de data
     }
-})
+
+    afficherGraph(props.triples);
+});
 // Mise à jour automatique quand les triples changent
 watch(() => props.triples, (newTriples) => {
-  if (newTriples.length > 0) {
+  if (newTriples && newTriples.length > 0) {
     afficherGraph(newTriples)
+  }else {
+      console.warn("Aucun triple à afficher.");
   }
 })
 

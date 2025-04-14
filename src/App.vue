@@ -1,21 +1,26 @@
 <template>
   <div id="app">
     <h1>SPARQL Data Search</h1>
-    <SearchBar/>
+    <SearchBar @update-results="results = $event"/>
 
      <!-- On affiche le graphe en dessous -->
-     <GraphDisplay />
+     <GraphDisplay v-if="results.length > 0" :triples="results"/>
   </div>
 </template>
 
 <script>
+import { ref } from "vue";
 import SearchBar from "./components/SearchBar.vue"
 import GraphDisplay from "./components/GraphDisplay.vue"
 export default {
   components: {
     SearchBar,
     GraphDisplay
-  }
+  },
+  setup() {
+    const results = ref([]); // Stocke les résultats de la recherche
+    return { results };
+  },
 };
 </script>
 
