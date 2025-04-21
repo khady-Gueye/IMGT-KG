@@ -11,6 +11,7 @@
     "core-js": "^3.8.3",
     "d3": "^7.9.0",
     "graphology": "^0.26.0",
+    "graphology-layout-force": "^0.2.4",
     "nunjucks": "^3.2.4",
     "sigma": "^3.0.1",
     "vue": "^3.2.13"
@@ -22,7 +23,11 @@
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "eslint-plugin-vue": "^8.0.3",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "vue-loader": "^17.4.2",
+    "vue-template-compiler": "^2.7.16"
   },
   "eslintConfig": {
     "root": true,
