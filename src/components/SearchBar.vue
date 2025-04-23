@@ -34,7 +34,7 @@
 
 <script>
 import GraphDisplay from "./GraphDisplay.vue";
-import { fetchData } from "../utils/Fontions.ts";
+import { fetchData } from "../utils/Fonctions";
 import { renderQuery } from "../utils/queryLoader.js";
 
 export default {
