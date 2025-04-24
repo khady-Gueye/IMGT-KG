@@ -20,9 +20,9 @@
         </thead>
         <tbody>
           <tr v-for="(result, index) in results" :key="index">
-            <td>{{ result.subject }}</td>
-            <td>{{ result.relation }}</td>
-            <td>{{ result.object }}</td>             
+            <td>{{ result.subject}}</td>
+            <td>{{ result.relation}}</td>
+            <td>{{ result.object}}</td>             
           </tr> 
         </tbody>
       </table>
@@ -36,7 +36,7 @@
 import GraphDisplay from "./GraphDisplay.vue";
 import { fetchData } from "../utils/Fonctions";
 import { renderQuery } from "../utils/queryLoader.js";
-
+import {replaceAllOccurrences} from "../utils/Fonctions.js";
 export default {
   components: { GraphDisplay },
   data() {
@@ -74,9 +74,9 @@ export default {
         this.results = lignes.slice(1).map(ligne => {
           const valeurs = ligne.split(",");
           return {
-            subject: valeurs[colonnes.indexOf("subject")] || "N/A",
-            relation: valeurs[colonnes.indexOf("relation")] || "N/A",
-            object: valeurs[colonnes.indexOf("object")] || "N/A"
+            subject: replaceAllOccurrences(valeurs[colonnes.indexOf("subject")]) || "N/A",
+            relation: replaceAllOccurrences(valeurs[colonnes.indexOf("relation")]) || "N/A",
+            object: replaceAllOccurrences(valeurs[colonnes.indexOf("object")]) || "N/A"
           };
         });
 

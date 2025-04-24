@@ -5,7 +5,7 @@
 <script setup>
 import { onMounted, watch, ref, onBeforeUnmount } from 'vue';
 import { initSigmaGraph } from '../utils/Fonctions.js';
-import { nodeType, nodeColor ,COLORS } from '../utils/Fonctions.js';
+import { nodeType, nodeColor ,COLORS ,filterInverseEdges} from '../utils/Fonctions.js';
 console.log("COULEURS DISPONIBLES :", COLORS);
 
 // eslint-disable-next-line
@@ -22,7 +22,8 @@ let graphHandler = null;
 
 // Fonction pour enrichir les triples avec type et couleur
 function enrichTriples(triples) {
-  return triples.map(triple => ({
+  const filtered = filterInverseEdges(triples); // 👈 Ici on filtre les inverses
+  return filtered.map(triple => ({
     ...triple,
     type: nodeType(triple.relation), // Déterminer le type de noeud
     color: nodeColor(triple.relation), // Obtenir la couleur associée à la relation
@@ -54,7 +55,7 @@ watch(() => props.triples, (newTriples) => {
 
   if (newTriples && newTriples.length > 0) {
 
-    const enriched = enrichTriples(newTriples);
+    const enriched = enrichTriples(props.triples);
     graphHandler = initSigmaGraph(container.value, enriched);
   }
 });
