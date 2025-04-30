@@ -15,6 +15,7 @@
     "graphology-layout-force": "^0.2.4",
     "nunjucks": "^3.2.4",
     "sigma": "^3.0.1",
+    "vis": "^4.21.0-EOL",
     "vue": "^3.2.13"
   },
   "devDependencies": {

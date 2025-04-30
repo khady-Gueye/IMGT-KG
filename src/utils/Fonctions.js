@@ -51,7 +51,7 @@ export function replaceAllOccurrences(str) {
 // 3. Couleurs et types de noeuds
 // ===================
 export const COLORS = {
-  defaultnode: "red",
+  "defaultnode": "red",
   "Target": "purple",
   "StudyProduct": "green",
   "Decision": "cyan",
@@ -61,7 +61,7 @@ export const COLORS = {
 };
 
 export const LIGHTCOLORS = {
-  defaultnode: "lightblue",
+  "defaultnode": "lightblue",
   "Target": "violet",
   "StudyProduct": "#FFCC99",
   "Decision": "#FF9999",
@@ -75,25 +75,25 @@ export const LIGHTCOLORS = {
 // ===================
 export function nodeType(relation) {
   switch (relation) {
-    case 'imgt:isTargetOf':
-      return 'Target';
-    case 'imgt:isStudyProductOf':
-      return 'StudyProduct';
-    case 'imgt:isDecisionOf':
-      return 'Decision';
-    case 'imgt:isConstructOf':
-      return 'Construct';
-    case 'bao:BAO_0000196':
-      return 'StudyContext';
-    case 'imgt:isProductOf':
-      return 'Product';
+    case "imgt:isTargetOf": 
+      return "Target";  // Ajout de la couleur violet
+    case "imgt:isStudyProductOf":
+      return "StudyProduct";
+    case "imgt:isDecisionOf":
+      return "Decision";
+    case "imgt:isConstructOf":
+      return "Construct";
+    case "bao:BAO_0000196":
+      return "StudyContext";
+    case "imgt:isProductOf":
+      return "Product";
     default:
-      return 'defaultnode';
+      return "defaultnode";
   }
 }
 
-export function nodeColor(nodeTypeName) {
-  return COLORS[nodeTypeName] || COLORS.defaultnode;
+export function nodeColor(nodeTypeName) {  // fonction pour la couleur 
+  return COLORS[nodeTypeName] || COLORS.defaultnode;  // retourne la couleur par défaut si le type n'est pas trouvé
 }
 
 
@@ -116,15 +116,15 @@ export function initSigmaGraph(container, triples) {
   triples.forEach((triple, i) => {
     const { subject, relation, object } = triple;
 
-    const subjectType = nodeType(relation);
+    const subjectType = nodeType(relation); // 
     //console.log(subjectType);
-    const subjectColor = nodeColor(subjectType);
+    const subjectColor = nodeColor(subjectType); // veut dire que le type de noeud est une couleur
     //console.log(subjectColor);
     const objectType = nodeType(relation);
     const objectColor = nodeColor(objectType);
     console.log(objectType);
     console.log(objectColor);
-console.log(relation);
+    console.log(relation);
     if (!graph.hasNode(subject)) {
       graph.addNode(subject, {
         label: subject,
@@ -141,11 +141,11 @@ console.log(relation);
         x: Math.sin(i),
         y: Math.cos(i),
         size: 20,
-        color: objectColor
+        color: objectColor  // colore de l'objet
       });
     }
 
-    const edgeId = `${subject}-${object}-${relation}`;
+    const edgeId = '${subject}-${object}-${relation}';// Utilisation d'un identifiant unique pour l'arête
     if (!graph.hasEdge(edgeId)) {
       graph.addEdge(subject, object, {
         label: relation,
@@ -157,7 +157,8 @@ console.log(relation);
     }
   });
 
-  const layout = new ForceSupervisor(graph, {
+  // Ajout d'un attribut pour le surlignage
+  const layout = new ForceSupervisor(graph, { 
     isNodeFixed: (_, attr) => attr.highlighted,
   });
   layout.start();
@@ -168,16 +169,16 @@ console.log(relation);
   });
 
   // Drag and drop des noeuds
-  let draggedNode = null;
-  let isDragging = false;
-
+  let draggedNode = null; // Noeud actuellement déplacé
+  let isDragging = false; // Indicateur de déplacement
+// Fonction pour gérer le drag and drop
   sigmaInstance.on("downNode", (e) => {
     isDragging = true;
     draggedNode = e.node;
     graph.setNodeAttribute(draggedNode, "highlighted", true);
     if (!sigmaInstance.getCustomBBox()) sigmaInstance.setCustomBBox(sigmaInstance.getBBox());
   });
-
+//
   sigmaInstance.on("moveBody", ({ event }) => {
     if (!isDragging || !draggedNode) return;
     const pos = sigmaInstance.viewportToGraph(event);
@@ -188,7 +189,7 @@ console.log(relation);
     event.original.preventDefault();
     event.original.stopPropagation();
   });
-
+//
   const handleUp = () => {
     if (draggedNode) graph.removeNodeAttribute(draggedNode, "highlighted");
     isDragging = false;
@@ -208,6 +209,7 @@ console.log(relation);
     }
   };
 }
+
 // ===================
 //6.Suppression des doublons
 // ===================
