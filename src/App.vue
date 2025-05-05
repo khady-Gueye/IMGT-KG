@@ -1,47 +1,46 @@
 <template>
   <div id="app">
-    <h1 id="title">SPARQL Data Search</h1>
-    <SearchBar @update-results="results = $event"/>
-
-     <!-- On affiche le graphe en dessous -->
-     <GraphDisplay v-if="results.length > 0" :triples="results"/>  
+    <div class="container">
+      <h1 id="title">SPARQL Data Search</h1>
+      <SearchBar @update-results="results = $event" />
+      <GraphDisplay v-if="results.length > 0" :triples="results" />
+    </div>
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
 import { ref } from "vue";
-import SearchBar from "./components/SearchBar.vue"
-import GraphDisplay from "./components/GraphDisplay.vue"
-export default {
-  components: {
-    SearchBar,
-    GraphDisplay
-  },
-  setup() {
-    const results = ref([]); // Stocke les résultats de la recherche
-    return { results };
-  },
-};
+import SearchBar from "./components/SearchBar.vue";
+import GraphDisplay from "./components/GraphDisplay.vue";
+
+// On définit explicitement le type des résultats
+const results = ref<any[]>([]);
 </script>
 
-
 <style>
-/* #app {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  margin-top: 50px;
-} */
 #app {
   font-family: Arial, sans-serif;
-  position: relative;
-  width: 100%;
-  height: 100%;
+  background-color: #f8f8f8;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.container {
+  width: 100%;
+  max-width: none;
+  background-color: transparent;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 
 #title {
   text-align: center;
   font-size: 2em;
   margin-bottom: 20px;
-  color: #42b983; /* Couleur du titre */
+  color: #42b983;
 }
 </style>

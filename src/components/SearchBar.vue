@@ -1,14 +1,18 @@
-<template> 
+<template>
   <div>
     <div id="researchbox">
-      <h2 id="researchtitle">Research</h2> 
-      <input type="text" v-model="query" placeholder="Enter your search" 
-      @keyup.enter="search"/>
+      <h2 id="researchtitle">Research</h2>
+      <input 
+        type="text" 
+        v-model="query" 
+        placeholder="Enter your search"
+        @keyup.enter="search"
+      >
       <button @click="search">Search</button>
     </div>
 
     <div id="results" v-if="results.length">
-      <GraphDisplay />  
+      <GraphDisplay :triples="results" />
       <h3>Results :</h3>
       <table>
         <thead>
@@ -20,77 +24,66 @@
         </thead>
         <tbody>
           <tr v-for="(result, index) in results" :key="index">
-            <td>{{ result.subject}}</td>
-            <td>{{ result.relation}}</td>
-            <td>{{ result.object}}</td>             
-          </tr> 
+            <td>{{ result.subject }}</td>
+            <td>{{ result.relation }}</td>
+            <td>{{ result.object }}</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
-</template> 
+</template>
 
-<script>
-import GraphDisplay from "./GraphDisplay.vue";
-import { fetchData } from "../utils/Fonctions";
-import { renderQuery } from "../utils/queryLoader.js";
-import {replaceAllOccurrences} from "../utils/Fonctions.js";
-export default {
-  components: { GraphDisplay },
-  data() {
-    return {
-      query: "",
-      results: [],
-      errorMessage: ""
-    };
-  },
-  methods: {
-    async search() {
-      if (!this.query) {
-        this.errorMessage = "Please enter a search.";
-        return;
-      }
-      this.errorMessage = "";
-      try { 
-        const sparqlQuery = await renderQuery("../templates/query.njk", { query: this.query });
-        console.log("Requête SPARQL générée :", sparqlQuery);
-        const data = await fetchData(sparqlQuery);
-        this.query = "";
-        console.log("Données reçues (CSV) :", data);
+<script setup lang="ts">
+import GraphDisplay from './GraphDisplay.vue';
+import { ref } from 'vue';
+import { fetchData, replaceAllOccurrences, type Triple } from '../utils/Fonctions';
+import { renderQuery } from '../utils/queryLoader';
 
-        const lignes = data.split("\n")
-                           .map(line => line.replace(/\r/g, '').trim())
-                           .filter(line => line !== "");
+const query = ref('');
+const results = ref<Triple[]>([]);
+const errorMessage = ref('');
 
-        if (lignes.length < 2) {
-          this.results = [];
-          this.errorMessage = "Aucun résultat trouvé.";
-          return;
-        }
-
-        const colonnes = lignes[0].split(",");
-        this.results = lignes.slice(1).map(ligne => {
-          const valeurs = ligne.split(",");
-          return {
-            subject: replaceAllOccurrences(valeurs[colonnes.indexOf("subject")]) || "N/A",
-            relation: replaceAllOccurrences(valeurs[colonnes.indexOf("relation")]) || "N/A",
-            object: replaceAllOccurrences(valeurs[colonnes.indexOf("object")]) || "N/A"
-          };
-        });
-
-        this.$emit("update-results", this.results);
-      } catch (error) {
-        this.errorMessage = "Erreur lors de la récupération des données.";
-        console.error(error);
-      }
-    }
+async function search() {
+  if (!query.value.trim()) {
+    errorMessage.value = "Please enter a search.";
+    return;
   }
-};
-</script> 
+
+  try {
+    const sparqlQuery = await renderQuery("../templates/query.njk", { query: query.value });
+    const csvData = await fetchData(sparqlQuery);
+    results.value = parseCSVResults(csvData);
+    query.value = "";
+  } catch (error) {
+    errorMessage.value = (error as Error).message;
+    console.error("Search error:", error);
+  }
+}
+
+function parseCSVResults(csv: string): Triple[] {
+  const lines = csv.split('\n')
+    .map(line => line.trim())
+    .filter(line => line);
+
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    return {
+      subject: replaceAllOccurrences(values[headers.indexOf("subject")]),
+      relation: replaceAllOccurrences(values[headers.indexOf("relation")]),
+      object: replaceAllOccurrences(values[headers.indexOf("object")])
+    };
+  });
+}
+</script>
 
 <style scoped>
+/* Styles inchangés depuis votre version originale */
 table {
   width: 100%;
   border-collapse: collapse;

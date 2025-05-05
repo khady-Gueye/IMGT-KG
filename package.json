@@ -11,23 +11,29 @@
     "chroma-js": "^3.1.2",
     "core-js": "^3.8.3",
     "d3": "^7.9.0",
-    "graphology": "^0.26.0",
-    "graphology-layout-force": "^0.2.4",
-    "nunjucks": "^3.2.4",
-    "sigma": "^3.0.1",
     "vis": "^4.21.0-EOL",
+    "vis-data": "^7.1.9",
     "vue": "^3.2.13"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@types/node": "^22.15.3",
+    "@types/nunjucks": "^3.2.6",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "@vitejs/plugin-vue": "^5.2.3",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+    "@vue/eslint-config-typescript": "^9.1.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
+    "eslint-plugin-vue": "^8.7.1",
+    "nunjucks": "^3.2.4",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
+    "vis-network": "^9.1.9",
     "vue-loader": "^17.4.2",
     "vue-template-compiler": "^2.7.16"
   },
@@ -38,10 +44,11 @@
     },
     "extends": [
       "plugin:vue/vue3-essential",
-      "eslint:recommended"
+      "eslint:recommended",
+      "@vue/typescript"
     ],
     "parserOptions": {
-      "parser": "@babel/eslint-parser"
+      "parser": "@typescript-eslint/parser"
     },
     "rules": {}
   },
