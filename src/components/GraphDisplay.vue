@@ -62,8 +62,19 @@ watch(uniqueNodeTypes, types => {
 
 // Computed pour filtrer les triples selon la sélection
 const filteredTriples = computed(() => {
+  const includedNodes = new Set<string>();
+
+  //Etape 1 :Collecter les noeuds des relations séléctionnées
+  props.triples.forEach(triple => {
+    if (selectedTypes.value.includes(nodeType(triple.relation))) {
+      includedNodes.add(triple.subject);
+      includedNodes.add(triple.object);
+    }
+  });
+
+  //Etape2 : inclure tous les triples connectés à ces noeuds 
   return props.triples.filter(triple =>
-    selectedTypes.value.includes(nodeType(triple.relation))
+    includedNodes.has(triple.subject) || includedNodes.has(triple.object)   
   );
 });
 

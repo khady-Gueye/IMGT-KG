@@ -55,7 +55,8 @@ async function search() {
   try {
     const sparqlQuery = await renderQuery("../templates/query.njk", { query: query.value });
     const csvData = await fetchData(sparqlQuery);
-    results.value = parseCSVResults(csvData);
+    const csvDataCopy = csvData
+    results.value = parseCSVResults(csvDataCopy);
     query.value = "";
   } catch (error) {
     errorMessage.value = (error as Error).message;

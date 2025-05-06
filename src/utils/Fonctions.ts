@@ -135,7 +135,8 @@ export function prepareVisData(triples: Triple[]): {
         label: shortenURI(subject),
         title: subject,
         color: nodeColor(nodeType(relation)),
-        shape: "box",
+        shape: "dot",
+        size: 10,
       });
       nodeCache.add(subject);
     }
@@ -147,6 +148,7 @@ export function prepareVisData(triples: Triple[]): {
         title: object,
         color: nodeColor(nodeType(relation)),
         shape: getNodeShape(object),
+        size: 10,
       });
       nodeCache.add(object);
     }
@@ -155,7 +157,7 @@ export function prepareVisData(triples: Triple[]): {
       id: `${subject}-${relation}-${object}`,
       from: subject,
       to: object,
-      label: shortenURI(relation),
+      title: shortenURI(relation),
       arrows: "to",
       color: "#2B2B2B",
     });
@@ -171,7 +173,7 @@ export function getVisOptions(): Options {
   return {
     nodes: {
       font: {
-        size: 14,
+        size: 8,
         face: "Roboto",
         strokeWidth: 3,
       },
@@ -181,9 +183,9 @@ export function getVisOptions(): Options {
       },
     },
     edges: {
-      width: 1.5,
+      width: 1,
       font: {
-        size: 12,
+        size: 8,
         strokeWidth: 2,
       },
       smooth: {
@@ -193,9 +195,19 @@ export function getVisOptions(): Options {
       },
     },
     physics: {
-      barnesHut: {
-        gravitationalConstant: -2000,
-        centralGravity: 0.3,
+      enabled: true,
+      // barnesHut: {
+      //   gravitationalConstant: -2000,
+      //   centralGravity: 0.3,
+      // },
+      forceAtlas2Based: {
+        theta: 0.5,
+        gravitationalConstant: -50,
+        centralGravity: 0.01,
+        springConstant: 0.08,
+        springLength: 100,
+        damping: 0.4,
+        avoidOverlap: 0
       },
     },
     interaction: {
@@ -225,9 +237,9 @@ export function shortenURI(uri: string): string {
 }
 
 function getNodeShape(uri: string): string {
-  if (uri.includes("imgt:")) return "ellipse";
-  if (uri.includes("obo:")) return "diamond";
-  return "box";
+  // if (uri.includes("imgt:")) return "circle";
+  // if (uri.includes("obo:")) return "circle";
+  return "dot";
 }
 
 // ===================
