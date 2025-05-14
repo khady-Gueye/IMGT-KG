@@ -1,0 +1,56 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix bao: <http://www.bioassayontology.org/bao#>
+
+SELECT DISTINCT ?subject ?relation ?object WHERE {
+
+  { imgt:mAb_{{ query }} ?relation ?object  BIND(imgt:mAb_{{ query }} AS ?subject) }
+  #Niveau  Target
+
+  UNION {
+    ?subject imgt:isTargetOf imgt:mAb_{{ query }} ;
+
+             ?relation ?object .
+  } 
+
+  UNION {
+    ?subject imgt:isProductOf imgt:mAb_{{ query }} ;  
+             ?relation ?object    
+  }
+
+# Niveau Product 
+
+  UNION {
+    ?subject imgt:isStudyProductOf / imgt:isProductOf imgt:mAb_{{ query }} ;
+             ?relation ?object
+  }
+
+# Niveau Decision
+  UNION {
+    ?subject imgt:isDecisionOf / imgt:isStudyProductOf / imgt:isProductOf imgt:mAb_{{ query }} ;
+             ?relation ?object
+  }
+
+# Niveau construct
+
+  UNION { 
+    ?subject imgt:isConstructOf imgt:mAb_{{ query }} ;  
+             ?relation ?object 
+  }
+
+#Niveau bao
+
+  UNION {
+    imgt:mAb_{{ query }} bao:BAO_0000196 ?subject .
+    ?subject ?relation ?object 
+  }
+
+  FILTER ( !REGEX(STR(?relation), "link|pharm|list|rdf-schema|skos|has_rank|commun_name|foaf") )
+
+}

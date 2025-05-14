@@ -11,6 +11,7 @@
     "chroma-js": "^3.1.2",
     "core-js": "^3.8.3",
     "d3": "^7.9.0",
+    "danfojs": "^1.2.0",
     "vis": "^4.21.0-EOL",
     "vis-data": "^7.1.9",
     "vue": "^3.2.13"
@@ -20,8 +21,8 @@
     "@babel/eslint-parser": "^7.12.16",
     "@types/node": "^22.15.3",
     "@types/nunjucks": "^3.2.6",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
