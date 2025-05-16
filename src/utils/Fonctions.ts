@@ -95,14 +95,20 @@ export function replaceAllOccurrences(str: string): string {
 /* =========================================================
  *  2) Détermination du type d’un nœud selon la relation
  * ========================================================*/
-export function nodeType(relation: string): NodeType {
+export function subjectNodeType(relation: string): NodeType {
   switch (relation) {
     case 'imgt:isTargetOf'       : return 'Target';
     case 'imgt:isStudyProductOf' : return 'StudyProduct';
     case 'imgt:isDecisionOf'     : return 'Decision';
     case 'imgt:isConstructOf'    : return 'Construct';
-    case 'bao:BAO_0000196'       : return 'StudyContext';
     case 'imgt:isProductOf'      : return 'Product';
+    default                      : return 'defaultnode';
+  }
+}
+export function objectNodeType(relation: string): NodeType {
+  switch (relation) {
+    case 'imgt:hasStudyProduct'  : return 'StudyProduct';
+    case 'bao:BAO_0000196'       : return 'StudyContext';
     default                      : return 'defaultnode';
   }
 }
@@ -114,7 +120,7 @@ export const nodeColor = (t: NodeType) => COLORS[t] ?? COLORS.defaultnode;
 function buildNodeTypeMap(triples: Triple[]): Record<string, NodeType> {
   const map: Record<string, NodeType> = {};
   triples.forEach(({ subject, relation }) => {
-    const t = nodeType(relation);
+    const t = subjectNodeType(relation);
     if (t !== 'defaultnode') map[subject] = t;
   });
   return map;
@@ -133,14 +139,14 @@ export function prepareVisData(triples: Triple[]): {
 
   const nodeTypeMap = buildNodeTypeMap(triples);
 
-  const addNode = (id: string, fallbackRelation: string) => {
+  const addNode = (id: string, nodeType: NodeType) => {
     if (seen.has(id)) return;
-    const finalType = nodeTypeMap[id] ?? nodeType(fallbackRelation);
+    //const finalType = nodeTypeMap[id] ?? nodeType(fallbackRelation);
     nodes.add({
       id,
       label: shortenURI(id),
       title: id,
-      color: nodeColor(finalType),
+      color: nodeColor(nodeType),
       shape: 'dot',
       size : 10,
     });
@@ -148,8 +154,8 @@ export function prepareVisData(triples: Triple[]): {
   };
 
   triples.forEach(({ subject, relation, object }) => {
-    addNode(subject, relation);
-    addNode(object , relation);
+    addNode(subject, nodeTypeMap[subject] ?? subjectNodeType(relation));
+    addNode(object , nodeTypeMap[object] ?? objectNodeType(relation));
 
     edges.add({
       id   : `${subject}-${relation}-${object}`,

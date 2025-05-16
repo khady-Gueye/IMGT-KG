@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import GraphDisplay from './GraphDisplay.vue';
 import { ref, computed } from 'vue';
-import { fetchData, replaceAllOccurrences, nodeType, type Triple } from '../utils/Fonctions'; 
+import { fetchData, replaceAllOccurrences, subjectNodeType, type Triple } from '../utils/Fonctions'; 
 import { renderQuery } from '../utils/queryLoader'; 
 
 // Types
@@ -123,7 +123,7 @@ async function search() {
     //  Ajouter le type via nodeType()
     const enriched: TripleWithType[] = parsed.map(triple => ({
       ...triple,
-      type: nodeType(triple.relation)
+      type: subjectNodeType(triple.relation)
     }));
 
     results.value = enriched;
