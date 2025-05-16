@@ -18,6 +18,7 @@ const results = ref<any[]>([]);
 </script>
 
 <style>
+
 #app {
   font-family: Arial, sans-serif;
   background-color: #f8f8f8;
@@ -43,4 +44,10 @@ const results = ref<any[]>([]);
   margin-bottom: 20px;
   color: #42b983;
 }
+
+/* Patch pour éviter le ResizeObserver loop warning */
+body {
+  contain: layout style;
+}
+
 </style>

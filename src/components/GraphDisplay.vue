@@ -5,15 +5,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount ,nextTick } from 'vue';
 import { initVisNetwork, type Triple } from '@/utils/Fonctions';
 /*eslint-disable */
 const props = defineProps<{ triples: Triple[] }>();
 const networkContainer = ref<HTMLElement | null>(null);
 let network: any = null;
 
-function initializeNetwork() {
+async function initializeNetwork() {
   if (networkContainer.value) {
+    await nextTick(); //  Attend que le DOM soit prêt
     network?.destroy();
     const { network: net } = initVisNetwork(networkContainer.value, props.triples);
     network = net;
