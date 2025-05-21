@@ -25,7 +25,9 @@
           v-model="selectedTypes"
           :id="`filter-${type}`"
         />
-        <label :for="`filter-${type}`">{{ type }}</label>
+        <label :for="`filter-${type}`" :style ="{color: getColorForType(type) }">
+          {{ type }}  <!--Pour la légende-->
+        </label>
       </div>
     </div>
 
@@ -61,6 +63,7 @@ import GraphDisplay from './GraphDisplay.vue';
 import { ref, computed } from 'vue';
 import { fetchData, replaceAllOccurrences, subjectNodeType, type Triple } from '../utils/Fonctions'; 
 import { renderQuery } from '../utils/queryLoader'; 
+import { nodeColor, type NodeType } from '../utils/Fonctions';
 
 // Types
 type TripleWithType = Triple & { type: string };
@@ -168,6 +171,11 @@ function parseCSVResults(csv: string): Triple[] {
     };
   });
 }
+//Pour la légende
+function getColorForType(type: string): string {
+  return nodeColor(type as NodeType);
+}
+
 </script>
 
 <style scoped>
