@@ -112,7 +112,11 @@ export function objectNodeType(relation: string): NodeType {
     default                      : return 'defaultnode';
   }
 }
+
+
 export const nodeColor = (t: NodeType) => COLORS[t] ?? COLORS.defaultnode;
+
+
 
 /* =========================================================
  *  3) Nouvelle table “type dominant” pour chaque nœud
