@@ -6,51 +6,47 @@ PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
 PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix bao: <http://www.bioassayontology.org/bao#>
+PREFIX bao: <http://www.bioassayontology.org/bao#>
 
 SELECT DISTINCT ?subject ?relation ?object WHERE {
+  
+  # 1. Récupère tout ce qui est directement lié au mAb
+  {
+    imgt:mAb_{{ query }} ?relation ?object .
+    BIND(imgt:mAb_{{ query }} AS ?subject)
+  }
 
-  { imgt:mAb_{{ query }} ?relation ?object  BIND(imgt:mAb_{{ query }} AS ?subject) }
-  #Niveau  Target
-
+  # 2. Récupère les targets
   UNION {
     ?subject imgt:isTargetOf imgt:mAb_{{ query }} ;
-
              ?relation ?object .
-  } 
+  }
 
+  # 3. Récupère les constructs
   UNION {
-    ?subject imgt:isProductOf imgt:mAb_{{ query }} ;  
-             ?relation ?object    
+    ?subject imgt:isConstructOf imgt:mAb_{{ query }} ;
+             ?relation ?object .
   }
 
-# Niveau Product 
-
-  UNION {
-    ?subject imgt:isStudyProductOf / imgt:isProductOf imgt:mAb_{{ query }} ;
-             ?relation ?object
-  }
-
-# Niveau Decision
-  UNION {
-    ?subject imgt:isDecisionOf / imgt:isStudyProductOf / imgt:isProductOf imgt:mAb_{{ query }} ;
-             ?relation ?object
-  }
-
-# Niveau construct
-
-  UNION { 
-    ?subject imgt:isConstructOf imgt:mAb_{{ query }} ;  
-             ?relation ?object 
-  }
-
-#Niveau bao
-
+  # 4. Récupère les données BAO
   UNION {
     imgt:mAb_{{ query }} bao:BAO_0000196 ?subject .
-    ?subject ?relation ?object 
+    ?subject ?relation ?object .
   }
 
-  FILTER ( !REGEX(STR(?relation), "link|pharm|list|rdf-schema|skos|has_rank|commun_name|foaf") )
+  # 5. Bloc Therapy (Product + StudyProduct + Decision)
+  UNION {
+    ?product imgt:isProductOf imgt:mAb_{{ query }} .
 
+    # On récupère toutes les entités liées en chaîne via ces relations
+    ?subject (
+      imgt:isProductOf |
+      imgt:isStudyProductOf |
+      imgt:isDecisionOf
+    )+ imgt:mAb_{{ query }} .
+
+    ?subject ?relation ?object .
+  }
+
+  FILTER ( !REGEX(STR(?relation), "link|pharm|list|rdf-schema|skos|foaf|has_rank|commun_name") )
 }

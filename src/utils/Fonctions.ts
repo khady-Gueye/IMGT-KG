@@ -33,8 +33,6 @@ export interface Triple {
 
 export type NodeType =
   | 'Target'
-  | 'StudyProduct'
-  | 'Decision'
   | 'Construct'
   | 'StudyContext'
   | 'Product'
@@ -46,8 +44,6 @@ export type NodeType =
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
   Target      : '#9C51B6',
-  StudyProduct: '#4CAF50',
-  Decision    : '#00BCD4',
   Construct   : '#6666CC',
   StudyContext: '#FFCC00',
   Product     : '#00CC99',
@@ -98,16 +94,17 @@ export function replaceAllOccurrences(str: string): string {
 export function subjectNodeType(relation: string): NodeType {
   switch (relation) {
     case 'imgt:isTargetOf'       : return 'Target';
-    case 'imgt:isStudyProductOf' : return 'StudyProduct';
-    case 'imgt:isDecisionOf'     : return 'Decision';
     case 'imgt:isConstructOf'    : return 'Construct';
-    case 'imgt:isProductOf'      : return 'Product';
+    case 'imgt:isProductOf'      : // Nouveau regroupement
+    case 'imgt:isStudyProductOf' : // Idem
+    case 'imgt:isDecisionOf'     : return 'Product'; // Idem
     default                      : return 'defaultnode';
   }
 }
+
 export function objectNodeType(relation: string): NodeType {
   switch (relation) {
-    case 'imgt:hasStudyProduct'  : return 'StudyProduct';
+    case 'imgt:hasStudyProduct'  : return 'Product';
     case 'bao:BAO_0000196'       : return 'StudyContext';
     default                      : return 'defaultnode';
   }

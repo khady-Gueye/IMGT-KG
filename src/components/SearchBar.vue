@@ -77,27 +77,22 @@ const allNodeTypes = ref<string[]>([]);
 const selectedTypes = ref<string[]>([]);
 const allSelected = ref(true);
 
-// Ajout des triplets associer au noeuds du type sélectionné
 const filteredResults = computed(() => {
   if (!selectedTypes.value.length) return [];
 
-  // Étape 1 : récupérer les triplets du type sélectionné
-  const selected = results.value.filter(triple =>
-    selectedTypes.value.includes(triple.type)
+  // Étape 1 : récupérer les sujets des triplets du type sélectionné
+  const selectedSubjects = new Set(
+    results.value
+      .filter(triple => selectedTypes.value.includes(triple.type))
+      .map(triple => triple.subject)
   );
 
-  // Étape 2 : collecter les nœuds concernés
-  const relevantNodes = new Set<string>();
-  selected.forEach(triple => {
-    relevantNodes.add(triple.subject);
-    relevantNodes.add(triple.object);
-  });
-
-  // Étape 3 : retourner tous les triplets liés à ces nœuds
+  // Étape 2 : récupérer tous les triplets liés à ces sujets (en tant que sujet ou objet)
   return results.value.filter(triple =>
-    relevantNodes.has(triple.subject) || relevantNodes.has(triple.object)
+    selectedSubjects.has(triple.subject) || selectedSubjects.has(triple.object)
   );
 });
+
 
 
 function toggleAllTypes() {
