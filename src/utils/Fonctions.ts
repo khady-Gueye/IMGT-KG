@@ -32,6 +32,7 @@ export interface Triple {
 }
 
 export type NodeType =
+  | 'mAb_Level'
   | 'Target'
   | 'Construct'
   | 'StudyContext'
@@ -43,6 +44,7 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
+  mAb_Level   : '#FF6B6B',
   Target      : '#9C51B6',
   Construct   : '#6666CC',
   StudyContext: '#FFCC00',
@@ -98,6 +100,8 @@ export function subjectNodeType(relation: string): NodeType {
     case 'imgt:isProductOf'      : // Nouveau regroupement
     case 'imgt:isStudyProductOf' : // Idem
     case 'imgt:isDecisionOf'     : return 'Product'; // Idem
+    case 'imgt:imgt:mAb_'        : return 'mAb_Level'; // Idem
+
     default                      : return 'defaultnode';
   }
 }
@@ -210,6 +214,13 @@ export function initVisNetwork(container: HTMLElement, triples: Triple[]) {
   const network = new Network(container, { nodes, edges }, getVisOptions());
   return { network, nodes, edges };
 }
+
+// ajout d'un helper pour reconnaître un mAb
+
+export const isMabUri = (uri: string) => //ce helper permet de vérifier si une URI est un mAb
+  uri.startsWith("imgt:mAb_"); // ou toute autre logique spécifique aux mAb
+
+
 
 /* =========================================================
  *  7) Utilitaires divers
