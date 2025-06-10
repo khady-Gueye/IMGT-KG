@@ -35,7 +35,7 @@ export type NodeType =
   | 'mAb_Level'
   | 'Target'
   | 'Construct'
-  | 'StudyContext'
+  | 'MOA'
   | 'Product'
   | 'defaultnode';
 
@@ -44,10 +44,10 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
-  mAb_Level   : '#FF6B6B',
+  mAb_Level   : '#FF9F43', // la couleur du mAb est la couleur marron
   Target      : '#9C51B6',
   Construct   : '#6666CC',
-  StudyContext: '#FFCC00',
+  MOA: '#FFCC00',
   Product     : '#00CC99',
 };
 
@@ -93,42 +93,53 @@ export function replaceAllOccurrences(str: string): string {
 /* =========================================================
  *  2) Détermination du type d’un nœud selon la relation
  * ========================================================*/
-export function subjectNodeType(relation: string): NodeType {
-  switch (relation) {
-    case 'imgt:isTargetOf'       : return 'Target';
-    case 'imgt:isConstructOf'    : return 'Construct';
-    case 'imgt:isProductOf'      : // Nouveau regroupement
-    case 'imgt:isStudyProductOf' : // Idem
-    case 'imgt:isDecisionOf'     : return 'Product'; // Idem
-    case 'imgt:imgt:mAb_'        : return 'mAb_Level'; // Idem
-
-    default                      : return 'defaultnode';
-  }
+export function subjectNodeType(subject: string, relation: string): NodeType {
+  const subjectType = nodeTypeFct(subject);
+  if (subjectType === 'defaultnode') {
+// Sinon typage par la relation
+switch (relation) {
+  case 'imgt:isTargetOf'       : return 'Target';
+  case 'imgt:isConstructOf'    : return 'Construct';
+  case 'imgt:isProductOf'      :
+  case 'imgt:isStudyProductOf' :
+  case 'imgt:isDecisionOf'     : return 'Product';
+  default                      : return 'defaultnode';
+}
+} else return subjectType;
 }
 
 export function objectNodeType(relation: string): NodeType {
   switch (relation) {
     case 'imgt:hasStudyProduct'  : return 'Product';
-    case 'bao:BAO_0000196'       : return 'StudyContext';
+    case 'bao:BAO_0000196'       : return 'MOA';
     default                      : return 'defaultnode';
   }
 }
 
-
 export const nodeColor = (t: NodeType) => COLORS[t] ?? COLORS.defaultnode;
-
 
 
 /* =========================================================
  *  3) Nouvelle table “type dominant” pour chaque nœud
  * ========================================================*/
-function buildNodeTypeMap(triples: Triple[]): Record<string, NodeType> {
-  const map: Record<string, NodeType> = {};
-  triples.forEach(({ subject, relation }) => {
-    const t = subjectNodeType(relation);
-    if (t !== 'defaultnode') map[subject] = t;
-  });
-  return map;
+
+function nodeTypeFct(uri: string): NodeType {
+  //  Si le sujet est un anticorps mAb
+  if (uri.includes('/mAb_') || uri.includes('imgt:mAb_')) {
+    return 'mAb_Level';
+  }
+  else if (uri.includes("imgt:Construct_")) {
+    return 'Construct';
+  }
+  else if (uri.includes("imgt:Product_")) {
+    return 'Product';
+  }
+  else if (uri.includes("imgt:MOA_")) {
+    return 'MOA';
+  }
+  else {
+    return 'defaultnode';
+  }
 }
 
 /* =========================================================
@@ -140,28 +151,43 @@ export function prepareVisData(triples: Triple[]): {
 } {
   const nodes = new DataSet<VisNode>();
   const edges = new DataSet<VisEdge>();
-  const seen  = new Set<string>();
 
-  const nodeTypeMap = buildNodeTypeMap(triples);
-
-  const addNode = (id: string, nodeType: NodeType) => {
-    if (seen.has(id)) return;
-    //const finalType = nodeTypeMap[id] ?? nodeType(fallbackRelation);
+  const setNode = (id: string, color: string) => {
+    console.log(id, color);
+    const n = nodes.get(id);
+    if (n) {
+      // n.color = color;
+      // edges.stream().filter(edge => edge.from === id).forEach(edge => {
+      //   nodes.get(edge.to)!.color = color;
+      //   return true;
+      // });
+    } else
     nodes.add({
       id,
       label: shortenURI(id),
       title: id,
-      color: nodeColor(nodeType),
+      color: color,
       shape: 'dot',
       size : 10,
     });
-    seen.add(id);
   };
 
   triples.forEach(({ subject, relation, object }) => {
-    addNode(subject, nodeTypeMap[subject] ?? subjectNodeType(relation));
-    addNode(object , nodeTypeMap[object] ?? objectNodeType(relation));
 
+    // Détermination du type de sujet  ( target , Product , etc. )
+    const subjectType =  subjectNodeType (subject,relation);
+    setNode(subject, nodeColor(subjectType));
+    let objectType = objectNodeType(relation);
+    if (objectType === 'defaultnode') {
+       objectType = nodeTypeFct(object);
+    }
+    let objectColor: string;
+    if (objectType !== 'defaultnode') {
+      objectColor = nodeColor(objectType);
+    } else {
+      objectColor = nodes.get(subject)?.color || COLORS.defaultnode;
+    }
+    setNode(object, objectColor);
     edges.add({
       id   : `${subject}-${relation}-${object}`,
       from : subject,
@@ -174,6 +200,7 @@ export function prepareVisData(triples: Triple[]): {
 
   return { nodes, edges };
 }
+
 
 /* =========================================================
  *  5) Options vis.js
@@ -215,13 +242,6 @@ export function initVisNetwork(container: HTMLElement, triples: Triple[]) {
   return { network, nodes, edges };
 }
 
-// ajout d'un helper pour reconnaître un mAb
-
-export const isMabUri = (uri: string) => //ce helper permet de vérifier si une URI est un mAb
-  uri.startsWith("imgt:mAb_"); // ou toute autre logique spécifique aux mAb
-
-
-
 /* =========================================================
  *  7) Utilitaires divers
  * ========================================================*/
@@ -230,10 +250,14 @@ export const shortenURI = (uri: string): string => {
   return short.length > 30 ? short.split(/[/#]/).pop() || short : short;
 };
 
+export function isMabUri(uri: string): boolean {
+  return uri.includes('/mAb_') || uri.includes('imgt:mAb_');
+}
+
 const getNodeShape = (_uri: string) => 'dot';
 
 /* =========================================================
- *  8) Filtrage de doublons inverses (inchangé)
+ *  8) Filtrage de doublons inverses
  * ========================================================*/
 const manualInverseRelations: Record<string, string> = {
   'imgt:someSpecialRelation'  : 'imgt:otherSpecialRelation',
