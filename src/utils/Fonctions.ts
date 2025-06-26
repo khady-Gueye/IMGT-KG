@@ -44,11 +44,11 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
-  mAb_Level   : '#FF9F43', // la couleur du mAb est la couleur marron
-  Target      : '#9C51B6',
-  Construct   : '#6666CC',
-  MOA: '#FFCC00',
-  Product     : '#00CC99',
+  mAb_Level   : '#CC0000', // la couleur du mAb est la couleur marron
+  Target      : '#FF00FF',
+  Construct   : '#0000FF',
+  MOA         : ' #FF6633 ',
+  Product     : ' #006600 ',  //Green
 };
 
 /* ───────────────────────────────
@@ -91,25 +91,33 @@ export function replaceAllOccurrences(str: string): string {
 }
 
 /* =========================================================
- *  2) Détermination du type d’un nœud selon la relation
+ *  2) Détermination du type d'un nœud selon la relation
  * ========================================================*/
 export function subjectNodeType(subject: string, relation: string): NodeType {
+  // Typage par la relation pour les Target
+  if (relation === 'imgt:isTargetOf') {
+    return 'Target';
+  }
+  
+  // Pour les autres types, on utilise d'abord le typage par URI
   const subjectType = nodeTypeFct(subject);
-  if (subjectType === 'defaultnode') {
-// Sinon typage par la relation
-switch (relation) {
-  case 'imgt:isTargetOf'       : return 'Target';
-  case 'imgt:isConstructOf'    : return 'Construct';
-  case 'imgt:isProductOf'      :
-  case 'imgt:isStudyProductOf' :
-  case 'imgt:isDecisionOf'     : return 'Product';
-  default                      : return 'defaultnode';
-}
-} else return subjectType;
+  if (subjectType !== 'defaultnode') {
+    return subjectType;
+  }
+  
+  // Sinon typage par la relation pour les autres types
+  switch (relation) {
+    case 'imgt:isConstructOf'    : return 'Construct';
+    case 'imgt:isProductOf'      :
+    case 'imgt:isStudyProductOf' :
+    case 'imgt:isDecisionOf'     : return 'Product';
+    default                      : return 'defaultnode';
+  }
 }
 
 export function objectNodeType(relation: string): NodeType {
   switch (relation) {
+    case 'imgt:hasTarget'        : return 'Target';  // Ajout de la détection de Target côté objet
     case 'imgt:hasStudyProduct'  : return 'Product';
     case 'bao:BAO_0000196'       : return 'MOA';
     default                      : return 'defaultnode';
@@ -120,7 +128,7 @@ export const nodeColor = (t: NodeType) => COLORS[t] ?? COLORS.defaultnode;
 
 
 /* =========================================================
- *  3) Nouvelle table “type dominant” pour chaque nœud
+ *  3) Nouvelle table "type dominant" pour chaque nœud
  * ========================================================*/
 
 function nodeTypeFct(uri: string): NodeType {
@@ -143,7 +151,7 @@ function nodeTypeFct(uri: string): NodeType {
 }
 
 /* =========================================================
- *  4) Construction DataSet pour vis-network
+ *  4) Construction DataSet pour vis-network avec homogénéisation des Target
  * ========================================================*/
 export function prepareVisData(triples: Triple[]): {
   nodes: DataSet<VisNode>;
@@ -151,50 +159,78 @@ export function prepareVisData(triples: Triple[]): {
 } {
   const nodes = new DataSet<VisNode>();
   const edges = new DataSet<VisEdge>();
-
+  
+  // Première étape : identifier tous les nœuds Target par leurs relations
+  const targetNodes = new Set<string>();
+  
+  triples.forEach(({ subject, relation, object }) => {
+    // Identifier les Target par la relation
+    if (relation === 'imgt:isTargetOf') {
+      targetNodes.add(subject);
+    } else if (relation === 'imgt:hasTarget') {
+      targetNodes.add(object);
+    }
+  });
+  
+  // Deuxième étape : créer les nœuds avec les types appropriés
   const setNode = (id: string, color: string) => {
-    console.log(id, color);
-    const n = nodes.get(id);
-    if (n) {
-      // n.color = color;
-      // edges.stream().filter(edge => edge.from === id).forEach(edge => {
-      //   nodes.get(edge.to)!.color = color;
-      //   return true;
-      // });
-    } else
+    // Si le nœud existe déjà, on ne le modifie pas
+    if (nodes.get(id)) return;
+    
+    // Si c'est un nœud Target identifié précédemment, on force la couleur Target
+    if (targetNodes.has(id)) {
+      nodes.add({
+        id,
+        label: shortenURI(id),
+        title: id,
+        color: nodeColor('Target'),
+        shape: 'dot',
+        size: 15,
+      });
+      return;
+    }
+    
+    // Sinon on ajoute le nœud avec la couleur fournie
     nodes.add({
       id,
       label: shortenURI(id),
       title: id,
       color: color,
       shape: 'dot',
-      size : 10,
+      size: 15,
     });
   };
 
+  // Troisième étape : traiter tous les triplets pour créer les nœuds et les arêtes
   triples.forEach(({ subject, relation, object }) => {
-
-    // Détermination du type de sujet  ( target , Product , etc. )
-    const subjectType =  subjectNodeType (subject,relation);
+    // Détermination du type de sujet
+    const subjectType = targetNodes.has(subject) ? 'Target' : subjectNodeType(subject, relation);
     setNode(subject, nodeColor(subjectType));
-    let objectType = objectNodeType(relation);
+    
+    // Détermination du type d'objet
+    let objectType = targetNodes.has(object) ? 'Target' : objectNodeType(relation);
     if (objectType === 'defaultnode') {
-       objectType = nodeTypeFct(object);
+      objectType = nodeTypeFct(object);
     }
+    
     let objectColor: string;
     if (objectType !== 'defaultnode') {
       objectColor = nodeColor(objectType);
     } else {
       objectColor = nodes.get(subject)?.color || COLORS.defaultnode;
     }
+    
     setNode(object, objectColor);
+    
+    // Ajout de l'arête
     edges.add({
-      id   : `${subject}-${relation}-${object}`,
-      from : subject,
-      to   : object,
+      id: `${subject}-${relation}-${object}`,
+      from: subject,
+      to: object,
       title: shortenURI(relation),
       arrows: 'to',
-      color : '#2B2B2B',
+      color: '#2B2B2B',
+      
     });
   });
 
@@ -211,11 +247,14 @@ export function getVisOptions(): Options {
       font: { size: 8, face: 'Roboto', strokeWidth: 3 },
       borderWidth: 2,
       shapeProperties: { useBorderWithImage: true },
+      size :100,
+
     },
     edges: {
       width: 1,
+      length: 200, // ← Augmente la longueur des arêtes
       font: { size: 8, strokeWidth: 2 },
-      smooth: { enabled: true, type: 'cubicBezier', roundness: 0.5 },
+      smooth: { enabled: true, type: 'discrete', roundness: 0.5 },
     },
     physics: {
       enabled: true,

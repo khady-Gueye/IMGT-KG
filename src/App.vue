@@ -1,53 +1,41 @@
 <template>
-  <div id="app">
-    <div class="container">
-      <h1 id="title">SPARQL Data Search</h1>
-      <SearchBar @update-results="results = $event" />
-      <GraphDisplay v-if="results.length > 0" :triples="results" />
-    </div>
-  </div>
+  <AppHeader />
+  <TabsNavigation
+    :tabs="tabs"
+    :currentTab="currentTab"
+    @change-tab="currentTab = $event"
+  />
+  <main class="main-content">
+    <component :is="currentView" />
+  </main>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import SearchBar from "./components/SearchBar.vue";
-import GraphDisplay from "./components/GraphDisplay.vue";
+import { ref, computed } from 'vue'
+import AppHeader from './components/layout/AppHeader.vue'
+import TabsNavigation from './components/layout/TabsNavigation.vue'
+import HomeCover from './components/home/HomeCover.vue'
+import GraphWorkspace from './components/kg/GraphWorkspace.vue' // <-- Utilise bien ce composant
 
-// On définit explicitement le type des résultats
-const results = ref<any[]>([]);
+// Définition des onglets
+const tabs = [
+  { id: 'home', label: 'Home', component: HomeCover },
+  { id: 'explore', label: 'Explore', component: GraphWorkspace }
+]
+const currentTab = ref('home')
+
+// Calcul du composant à afficher
+const currentView = computed(() =>
+  tabs.find(tab => tab.id === currentTab.value)?.component || HomeCover
+)
 </script>
 
-<style>
-
-#app {
-  font-family: Arial, sans-serif;
-  background-color: #f8f8f8;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.container {
-  width: 100%;
-  max-width: none;
-  background-color: transparent;
+<style scoped>
+.main-content {
+  width: 100vw;
+  min-height: 90vh;
+  margin: 0;
   padding: 0;
-  box-shadow: none;
-  border-radius: 0;
+  background: #fff;
 }
-
-
-#title {
-  text-align: center;
-  font-size: 2em;
-  margin-bottom: 20px;
-  color: #42b983;
-}
-
-/* Patch pour éviter le ResizeObserver loop warning */
-body {
-  contain: layout style;
-}
-
 </style>
