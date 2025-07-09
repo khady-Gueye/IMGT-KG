@@ -44,7 +44,7 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
-  mAb_Level   : '#CC0000', // la couleur du mAb est la couleur marron
+  mAb_Level   : '#CC0000', // la couleur du mAb est la couleur rouge
   Target      : '#FF00FF',
   Construct   : '#0000FF',
   MOA         : ' #FF6633 ',
@@ -76,10 +76,22 @@ const PREFIX_MAPPINGS: Record<string, string> = {
  * ========================================================*/
 export async function fetchData(requete: string): Promise<string> {
   const response = await fetch(
-    `https://www.imgt.org/fuseki/MabkgKg/?query=${encodeURIComponent(requete)}`,
-    { method: 'GET', headers: { Accept: 'text/csv' } }
+    'https://www.imgt.org/fuseki/MabkgKg/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/csv',
+      },
+      body: `query=${encodeURIComponent(requete)}`,
+    }
   );
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}\n${errorText}`);
+  }
+
   return response.text();
 }
 
