@@ -40,6 +40,7 @@
       <GraphDisplay
         v-if="filteredResults.length && currentNav === 'imgt-mab-kg'"
         :triples="filteredResults"
+        @node-click="handleShowDoc"
       />
 
       <button
@@ -77,7 +78,16 @@
 
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </main>
+    <DocumentationDrawer
+  :visible="docVisible"
+  :docData="docData"
+  :entityIRI="currentEntityIRI"
+  :entityLabel="currentEntityLabel"
+  @close="docVisible = false"
+/>
+
   </div>
+  
 </template>
 
 <script setup lang="ts">
@@ -89,6 +99,10 @@ import { fetchData, replaceAllOccurrences, subjectNodeType, objectNodeType, type
 import { renderQuery, fetchMabsFromSparql } from '@/utils/queryLoader'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
+import DocumentationDrawer from './DocumentationDrawer.vue'
+import { renderDocQuery } from '@/utils/queryLoader'
+import { fetchDocData } from '@/utils/Fonctions'
+
 
 const selectedMabs = ref<Array<{ id: string; label: string }>>([])
 const allMabOptions = ref<Array<{ id: string; label: string }>>([])
@@ -214,7 +228,48 @@ function parseCSVResults(csv: string): Triple[] {
       relation: replaceAllOccurrences(values[headers.indexOf("relation")] || ""),
       object: replaceAllOccurrences(values[headers.indexOf("object")] || "")
     }
-  })
+  })  
+}
+
+// Documentation management
+
+type DocDataRow = {
+  property: string
+  propertyLabel: string | null
+  value: string
+  valueLabel: string | null
+}
+const docData = ref<DocDataRow[]>([])
+const docVisible = ref(false)
+const currentEntityIRI = ref('')
+const currentEntityLabel = ref('')
+
+
+async function handleShowDoc(iri: string) {
+  console.log('handleShowDoc appelé pour IRI =', iri)
+  currentEntityIRI.value = iri
+
+  const query = await renderDocQuery(iri)
+  console.log("Query SPARQL générée pour doc:", query)
+
+  const results = await fetchDocData(query)
+  docData.value = results
+
+  // 👉 Tenter de trouver un label RDF
+  const labelRow = results.find(row =>
+    row.property === 'http://www.w3.org/2000/01/rdf-schema#label' ||
+    row.propertyLabel?.toLowerCase() === 'label'
+  )
+  currentEntityLabel.value =
+    labelRow?.valueLabel || labelRow?.value || shortenURI(iri)
+
+  console.log("Label trouvé =", currentEntityLabel.value)
+  docVisible.value = true
+}
+
+// Utilitaire local
+function shortenURI(uri: string): string {
+  return uri.replace(/^.*[#/]/, '')
 }
 </script>
 

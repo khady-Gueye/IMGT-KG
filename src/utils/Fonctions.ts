@@ -76,24 +76,55 @@ const PREFIX_MAPPINGS: Record<string, string> = {
  * ========================================================*/
 export async function fetchData(requete: string): Promise<string> {
   const response = await fetch(
-    'https://www.imgt.org/fuseki/MabkgKg/',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'text/csv',
-      },
-      body: `query=${encodeURIComponent(requete)}`,
-    }
+    `https://www.imgt.org/fuseki/MabkgKg/?query=${encodeURIComponent(requete)}`,
+    { method: 'GET', headers: { Accept: 'text/csv' } }
   );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP error! status: ${response.status}\n${errorText}`);
-  }
-
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   return response.text();
 }
+/* =========================================================
+ *  8) Fonction fetch vers l'endpoint SPARQL 
+ * ========================================================*/
+type SparqlRawBinding = {
+  property: { value: string },
+  propertyLabel?: { value: string },
+  value: { value: string },
+  valueLabel?: { value: string }
+}
+
+export async function fetchDocData(sparqlQuery: string): Promise<Array<{
+  property: string,
+  propertyLabel: string | null,
+  value: string,
+  valueLabel: string | null
+}>> {
+  const endpoint = "https://www.imgt.org/fuseki/MabkgKg/?query"
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/sparql-query",
+      "Accept": "application/sparql-results+json"
+    },
+    body: sparqlQuery
+  })
+
+  if (!response.ok)
+    throw new Error(`SPARQL error: ${response.status}`);
+
+  const json = await response.json();
+
+  return json.results.bindings.map((row: SparqlRawBinding) => ({
+    property: row.property.value,
+    propertyLabel: row.propertyLabel?.value || null,
+    value: row.value.value,
+    valueLabel: row.valueLabel?.value || null,
+  }))
+}
+
+/* =========================================================
+ * Replace les préfixes dans une chaîne de caractères 
+ * ========================================================*/
+
 
 export function replaceAllOccurrences(str: string): string {
   return Object.entries(PREFIX_MAPPINGS).reduce(
@@ -287,9 +318,42 @@ export function getVisOptions(): Options {
 /* =========================================================
  *  6) Initialisation du réseau vis.js
  * ========================================================*/
-export function initVisNetwork(container: HTMLElement, triples: Triple[]) {
+
+type CustomVisNode = {
+  id: string;
+  label?: string;
+  iri?: string;
+  [key: string]: any;
+};
+
+export function initVisNetwork(
+  container: HTMLElement,
+  triples: Triple[],
+  onNodeClick?: (iri: string) => void
+) {
   const { nodes, edges } = prepareVisData(triples);
   const network = new Network(container, { nodes, edges }, getVisOptions());
+
+  if (onNodeClick) {
+    network.on('click', event => {
+      if (event.nodes.length > 0) {
+        const nodeId = event.nodes[0];
+
+        // ✅ CORRECT ici (PAS de crochets autour de nodeId)
+        const nodeData = nodes.get(nodeId) as unknown as CustomVisNode;
+        console.log('Clicked node:', nodeId, nodeData);
+
+        if (nodeData?.id) {
+          onNodeClick(nodeData.id);
+        } else if (nodeData?.iri) {
+          onNodeClick(nodeData.iri);
+        } else {
+          onNodeClick(nodeId);
+        }
+      }
+    });
+  }
+
   return { network, nodes, edges };
 }
 
@@ -306,6 +370,8 @@ export function isMabUri(uri: string): boolean {
 }
 
 const getNodeShape = (_uri: string) => 'dot';
+
+
 
 /* =========================================================
  *  8) Filtrage de doublons inverses
