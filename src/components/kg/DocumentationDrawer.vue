@@ -1,5 +1,5 @@
 <template>
-  <div class="documentation-drawer" v-if="visible">
+<div class="documentation-drawer" v-if="visible">
     <!-- En-tête -->
     <div class="drawer-header">
       <div class="title-block">
@@ -14,13 +14,38 @@
         <li v-for="(row, index) in docData" :key="index" class="doc-item">
           <strong class="doc-label">
             <template v-if="row.property">
-              <a :href="row.property" target="_blank">{{ row.propertyLabel || shortenURI(row.property) }}</a> :
+              <template v-if="isUri(row.property)">
+                <a 
+                  :href="row.property" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  :title="row.property"
+                >
+                  {{ row.propertyLabel || shortenURI(row.property) }}
+                </a> :
+              </template>
+              <template v-else>
+                {{ row.propertyLabel || row.property }} :
+              </template>
             </template>
             <span v-else class="missing-value">(propriété inconnue)</span>
           </strong>
+
           <span class="doc-value">
             <template v-if="row.value">
-              <a :href="row.value" target="_blank">{{ row.valueLabel || shortenURI(row.value) }}</a>
+              <template v-if="isUri(row.value)">
+                <a 
+                  :href="row.value" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  :title="row.value"
+                >
+                  {{ row.valueLabel || shortenURI(row.value) }}
+                </a>
+              </template>
+              <template v-else>
+                {{ row.value }}
+              </template>
             </template>
             <span v-else class="missing-value">(valeur inconnue)</span>
           </span>
@@ -33,13 +58,13 @@
 <script setup lang="ts">
 /* eslint-disable */
 defineProps<{
-  visible: boolean,
-  entityIRI: string,
-  entityLabel?: string,
+  visible: boolean
+  entityIRI: string
+  entityLabel?: string
   docData: Array<{
-    property: string | null,
-    propertyLabel: string | null,
-    value: string | null,
+    property: string | null
+    propertyLabel: string | null
+    value: string | null
     valueLabel: string | null
   }>
 }>()
@@ -49,6 +74,13 @@ defineEmits(['close'])
 function shortenURI(uri?: string | null): string {
   if (!uri) return '(inconnu)'
   return uri.replace(/^.*[#/]/, '')
+}
+
+// Fonction qui teste si la valeur est une URI (HTTP(S), FTP, mailto, urn, ou <http...>)
+function isUri(value: string | null | undefined): boolean {
+  if (!value) return false
+  const trimmed = value.trim()
+  return /^(https?:\/\/|ftp:\/\/|mailto:|urn:|<http)/i.test(trimmed)
 }
 </script>
 
