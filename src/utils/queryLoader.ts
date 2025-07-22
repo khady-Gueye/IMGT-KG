@@ -69,31 +69,14 @@ export async function fetchMabsFromSparql(): Promise<Array<{ id: string, label: 
 
 const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:'];
 
-export async function renderDocQuery(input: string): Promise<string> {
-  // Charge la requête template modifiée qui utilise $ENTITY et $LABEL
+export async function renderDocQuery(iri: string): Promise<string> {
   const rawDocQuery = await fetch('/templates/documentation.rq').then(r => r.text())
-  
-  // Détermine si 'input' est un QName/IRI ou un label
-  const isPrefixed = qnamePrefixes.some(prefix => input.startsWith(prefix));
-  const isIri = input.startsWith('<'); // IRI absolu
-  
-  // Si c'est un QName ou une IRI complète, on remplit $ENTITY et vide $LABEL
-  // Sinon, on met $ENTITY à UNDEF (pour ignorer) et on remplit $LABEL
-  let entityStr: string;
-  let labelStr: string;
-  
-  if (isPrefixed || isIri) {
-    entityStr = input;          // ex: "imgt:mAb_781" ou "<http://example.org/xxx>"
-    labelStr = '""';            // chaîne vide (avec guillemets)
-  } else {
-    entityStr = 'UNDEF';        // indique qu'on ne cherche pas par IRI
-    // échappe les guillemets dans le label et met en guillemets
-    labelStr = `"${input.replace(/(["\\])/g, '\\$1')}"`;
+
+  // Vérifie si iri commence par l'un des préfixes déclarés OU déjà <http...>
+  const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix));
+  if (!isPrefixed && !iri.startsWith('<')) {
+    iri = `<${iri}>`
   }
-
-  // Remplace les placeholders dans la requête
-  let query = rawDocQuery.replace(/\$ENTITY/g, entityStr);
-  query = query.replace(/\$LABEL/g, labelStr);
-
-  return query;
+  const fullIRI = iri.startsWith('<') ? iri : `<${iri}>`
+  return rawDocQuery.replace(/\$ENTITY/g, iri)
 }

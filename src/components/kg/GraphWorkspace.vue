@@ -78,19 +78,24 @@
 
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </main>
-    <DocumentationDrawer
-  :visible="docVisible"
-  :docData="docData"
-  :entityIRI="currentEntityIRI"
-  :entityLabel="currentEntityLabel"
-  @close="docVisible = false"
-/>
 
+    <DocumentationDrawer
+      :visible="drawerVisible"
+      :entityIRI="currentIRI"
+      :entityLabel="currentLabel"
+      :docData="docData"
+      :canGoBack="canGoBack"
+      :canGoForward="canGoForward"
+      @close="closeDocDrawer"
+      @show-doc="handleShowDoc"
+      @doc-back="handleDocBack"      
+      @doc-forward="handleDocForward"
+    />
   </div>
-  
 </template>
 
 <script setup lang="ts">
+/* eslint-disable */
 import { onMounted, ref, computed, watch } from 'vue'
 import SidebarNav from './SidebarNav.vue'
 import SidebarFilters from './SidebarFilters.vue'
@@ -102,7 +107,6 @@ import 'vue-multiselect/dist/vue-multiselect.min.css'
 import DocumentationDrawer from './DocumentationDrawer.vue'
 import { renderDocQuery } from '@/utils/queryLoader'
 import { fetchDocData } from '@/utils/Fonctions'
-
 
 const selectedMabs = ref<Array<{ id: string; label: string }>>([])
 const allMabOptions = ref<Array<{ id: string; label: string }>>([])
@@ -125,6 +129,7 @@ const errorMessage = ref('')
 const allNodeTypes = ref<string[]>([])
 const selectedTypes = ref<string[]>([])
 const showTable = ref(false)
+
 
 const filteredResults = computed(() => {
   if (!selectedTypes.value.length) return results.value
@@ -231,8 +236,9 @@ function parseCSVResults(csv: string): Triple[] {
   })  
 }
 
-// Documentation management
+// === Gestion documentation drawer ===
 
+// === Drawer ===
 type DocDataRow = {
   property: string
   propertyLabel: string | null
@@ -240,37 +246,63 @@ type DocDataRow = {
   valueLabel: string | null
 }
 const docData = ref<DocDataRow[]>([])
-const docVisible = ref(false)
-const currentEntityIRI = ref('')
-const currentEntityLabel = ref('')
+const currentIRI = ref('')
+const currentLabel = ref('')
+const drawerVisible = ref(false)
 
+const backStack = ref<string[]>([])
+const forwardStack = ref<string[]>([])
+const canGoBack = computed(() => backStack.value.length > 0)
+const canGoForward = computed(() => forwardStack.value.length > 0)
 
-async function handleShowDoc(iri: string) {
-  console.log('handleShowDoc appelé pour IRI =', iri)
-  currentEntityIRI.value = iri
+async function handleShowDoc(iri: string, options = { resetForward: true }) {
+  if (drawerVisible.value && iri !== currentIRI.value && currentIRI.value) {
+    backStack.value.push(currentIRI.value)
+    if (options.resetForward) forwardStack.value = []
+  }
 
-  const query = await renderDocQuery(iri)
-  console.log("Query SPARQL générée pour doc:", query)
-
-  const results = await fetchDocData(query)
-  docData.value = results
-
-  // 👉 Tenter de trouver un label RDF
-  const labelRow = results.find(row =>
-    row.property === 'http://www.w3.org/2000/01/rdf-schema#label' ||
-    row.propertyLabel?.toLowerCase() === 'label'
-  )
-  currentEntityLabel.value =
-    labelRow?.valueLabel || labelRow?.value || shortenURI(iri)
-
-  console.log("Label trouvé =", currentEntityLabel.value)
-  docVisible.value = true
+  currentIRI.value = iri
+  try {
+    const query = await renderDocQuery(iri)
+    const results = await fetchDocData(query)
+    docData.value = results
+    const labelRow = results.find(r => r.property?.includes('#label') || r.propertyLabel?.toLowerCase() === 'label')
+    currentLabel.value = labelRow?.valueLabel || labelRow?.value || shortenURI(iri)
+  } catch (e) {
+    docData.value = []
+    currentLabel.value = shortenURI(iri)
+  }
+  drawerVisible.value = true
 }
 
-// Utilitaire local
-function shortenURI(uri: string): string {
+async function handleDocBack() {
+  const previous = backStack.value.pop()
+  if (previous) {
+    forwardStack.value.push(currentIRI.value)
+    await handleShowDoc(previous, { resetForward: false })
+  }
+}
+
+async function handleDocForward() {
+  const next = forwardStack.value.pop()
+  if (next) {
+    backStack.value.push(currentIRI.value)
+    await handleShowDoc(next, { resetForward: false })
+  }
+}
+
+function closeDocDrawer() {
+  drawerVisible.value = false
+  backStack.value = []
+  forwardStack.value = []
+}
+
+function shortenURI(uri?: string | null): string {
+  if (!uri) return '(inconnu)'
   return uri.replace(/^.*[#/]/, '')
 }
+
+
 </script>
 
 <style scoped>
