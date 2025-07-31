@@ -23,6 +23,8 @@ interface VisEdge extends Edge {
   label?:  string;
   arrows?: string;
   color?:  string;
+  originalLabel?: string;  // Ajout de cette propriété
+  //solver?: string; // Ajout de cette propriété pour le solver
 }
 
 export interface Triple {
@@ -196,7 +198,7 @@ function nodeTypeFct(uri: string): NodeType {
 /* =========================================================
  *  4) Construction DataSet pour vis-network avec homogénéisation des Target
  * ========================================================*/
-export function prepareVisData(triples: Triple[]): {
+export function prepareVisData(triples: Triple[], showRelations: boolean = false): {
   nodes: DataSet<VisNode>;
   edges: DataSet<VisEdge>;
 } {
@@ -272,8 +274,11 @@ export function prepareVisData(triples: Triple[]): {
       to: object,
       title: shortenURI(relation),
       arrows: 'to',
-      color: '#2B2B2B',
-      
+      font: {align: 'top'},
+      color: '#FFB8AD',
+      label:showRelations ? relation: '',
+      originalLabel: relation  // Ajout de la propriété originale pour le label
+
     });
   });
 
@@ -294,10 +299,10 @@ export function getVisOptions(): Options {
 
     },
     edges: {
-      width: 1,
-      length: 200, // ← Augmente la longueur des arêtes
-      font: { size: 8, strokeWidth: 2 },
-      smooth: { enabled: true, type: 'discrete', roundness: 0.5 },
+      width: 0.7,
+      length:250, // ← Augmente la longueur des arêtes
+      font: { size:8, strokeWidth: 3 },
+      smooth: { enabled: true, type: 'dynamic', roundness: 0.5 }, // change 'cubicBezier' to 'dynamic' for dynamic edges or to 'straightCross' for straight edges
     },
     physics: {
       enabled: true,
@@ -308,9 +313,12 @@ export function getVisOptions(): Options {
         springConstant: 0.08,
         springLength: 100,
         damping: 0.4,
-        avoidOverlap: 0,
+        avoidOverlap: 1,
       },
+    
     },
+   
+    
     interaction: { tooltipDelay: 200, hideEdgesOnDrag: true },
   };
 }
@@ -329,9 +337,10 @@ type CustomVisNode = {
 export function initVisNetwork(
   container: HTMLElement,
   triples: Triple[],
-  onNodeClick?: (iri: string) => void
+  onNodeClick?: (iri: string) => void,
+  showRelations: boolean = false
 ) {
-  const { nodes, edges } = prepareVisData(triples);
+  const { nodes, edges } = prepareVisData(triples, showRelations); // Prépare les données pour vis.js 
   const network = new Network(container, { nodes, edges }, getVisOptions());
 
   if (onNodeClick) {
@@ -339,7 +348,7 @@ export function initVisNetwork(
       if (event.nodes.length > 0) {
         const nodeId = event.nodes[0];
 
-        // ✅ CORRECT ici (PAS de crochets autour de nodeId)
+        //  CORRECT ici (PAS de crochets autour de nodeId)
         const nodeData = nodes.get(nodeId) as unknown as CustomVisNode;
         console.log('Clicked node:', nodeId, nodeData);
 
@@ -354,8 +363,12 @@ export function initVisNetwork(
     });
   }
 
+  
+
   return { network, nodes, edges };
+  
 }
+
 
 /* =========================================================
  *  7) Utilitaires divers

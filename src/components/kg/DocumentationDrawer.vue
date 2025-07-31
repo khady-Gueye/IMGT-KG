@@ -15,7 +15,7 @@
         <li v-for="(row, index) in docData" :key="index" class="doc-item">
           <strong class="doc-label">
             
-            <template v-if="isInternalUri(row.property)">
+            <template v-if="(row.property)">
               <span
                 class="doc-link"
                 @click="$emit('show-doc', row.property)"
@@ -39,7 +39,7 @@
 
           <span class="doc-value">
             <template v-if="row.value">
-              <template v-if="isInternalUri(row.value)">
+              <template v-if="(row.value)">
                 <span
                   class="doc-link"
                   @click="$emit('show-doc', row.value)"
@@ -214,17 +214,17 @@ function isInternalUri(value: string | null | undefined): boolean {
 .drawer-footer {
   width: 100%;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between; /* cela pousse les 2 boutons aux extrémités  */
   padding: 1em 1.5em;
   border-top: 1px solid #f1f1f1;
   background: #fafbfc;
 }
 
 .back-btn {
-  background: #3498db;
+  background: #cfcfcf;
   color: #fff;
-  padding: 0.7em 1.8em;
-  border-radius: 24px;
+  padding: 0.5em 1.4em;
+  border-radius: 6px;
   font-size: 1rem;
   border: none;
   cursor: pointer;
@@ -247,10 +247,10 @@ function isInternalUri(value: string | null | undefined): boolean {
   cursor: pointer;
 }
 .forward-btn {
-  background: #68c86d;
+  background: #cfcfcf;
   color: #fff;
-  padding: 0.7em 1.8em;
-  border-radius: 24px;
+  padding: 0.5em 1.4em;
+  border-radius: 6px;
   font-size: 1rem;
   border: none;
   cursor: pointer;
@@ -265,7 +265,7 @@ function isInternalUri(value: string | null | undefined): boolean {
 }
 
 .forward-btn:not(:disabled):hover {
-  background: #32a846;
+  background: #2176ae;
 }
 
 

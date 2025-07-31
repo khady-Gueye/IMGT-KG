@@ -9,7 +9,10 @@
       <SidebarFilters
         :entityTypes="allNodeTypes"
         :selectedTypes="selectedTypes"
+        :showRelations="showRelationLabels"
         @update:selectedTypes="selectedTypes = $event"
+        @update:showRelations="showRelationLabels = $event"
+
       />
     </SidebarNav>
 
@@ -40,7 +43,9 @@
       <GraphDisplay
         v-if="filteredResults.length && currentNav === 'imgt-mab-kg'"
         :triples="filteredResults"
+        :showRelations="showRelationLabels"
         @node-click="handleShowDoc"
+
       />
 
       <button
@@ -110,7 +115,7 @@ import { fetchDocData } from '@/utils/Fonctions'
 
 const selectedMabs = ref<Array<{ id: string; label: string }>>([])
 const allMabOptions = ref<Array<{ id: string; label: string }>>([])
-
+const showRelationLabels = ref(false)
 const navItems = [
   { id: 'imgt-mab-kg', label: 'IMGT-MAB-KG' },
   { id: 'imgt-kg', label: 'IMGT-KG' }
