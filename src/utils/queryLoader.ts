@@ -1,82 +1,148 @@
+import { fetchData } from './Fonctions'
+import Papa from 'papaparse'
+
 /**
  * Charge un template SPARQL et injecte dynamiquement une clause VALUES.
- * Pour les requêtes dynamiques basées sur des mAbs sélectionnés.
+ * Pour les requêtes dynamiques basées sur des entités sélectionnées.
  *
  * @param templateUrl - URL du fichier .rq contenant le template avec le marqueur __VALUES__
- * @param selectedMabs - Liste des mAbs sélectionnés, ex : [{ id: 'mAb_123' }, { id: 'mAb_456' }]
+ * @param selectedEntities - Liste des entités sélectionnées, ex : [{ id: 'mAb_123' }, { id: 'Target_456' }]
  * @returns Une chaîne SPARQL complète avec la clause VALUES injectée
  */
 export async function renderQuery(
   templateUrl: string,
-  selectedMabs: Array<{ id: string }>
+  selectedEntities: Array<{ id: string }>
 ): Promise<string> {
   const res = await fetch(templateUrl)
   if (!res.ok) throw new Error(`Impossible de charger le template : ${res.statusText}`)
   const tpl = await res.text()
 
-  // On suppose que `id` contient déjà "mAb_123", donc on évite d'ajouter le préfixe deux fois
-  const values = selectedMabs.map(mab => `imgt:${mab.id}`).join(' ')
-  const finalQuery = tpl.replace('__VALUES__', values)
+  // Génère la clause VALUES en fonction du template
+  const values = selectedEntities.map(entity => {
+    // Si l'id contient déjà le préfixe, on l'utilise tel quel
+    if (entity.id.includes(':') || entity.id.startsWith('<')) {
+      return entity.id
+    }
+    // Sinon, on ajoute le préfixe imgt:
+    return `imgt:${entity.id}`
+  }).join(' ')
 
+  const finalQuery = tpl.replace('__VALUES__', values)
   console.log("SPARQL générée :", finalQuery)
   return finalQuery
 }
-import { fetchData } from './Fonctions'
+
+/**
+ * Fonction générique pour parser les entités depuis un CSV, utilisant PapaParse pour robustesse.
+ */
+async function parseEntitiesList(
+  csv: string,
+  idColName: string,
+  labelColName: string
+): Promise<Array<{ id: string; label: string }>> {
+  if (!csv) return []
+
+  const results = Papa.parse(csv, {
+    header: true,
+    skipEmptyLines: true,
+  })
+
+  if (results.errors.length > 0) {
+    console.error('Erreurs durant parsing CSV:', results.errors)
+    return []
+  }
+
+  const data = results.data as Array<Record<string, string>>
+
+  const entities = data.map(row => {
+    const idRaw = (row[idColName] || '').replace(/"/g, '').trim()
+    let id: string
+
+    if (idColName === 'mab') {
+      const idMatch = idRaw.match(/(?:#|imgt:)?(mAb_[A-Za-z0-9_]+)/)
+      id = idMatch ? idMatch[1] : idRaw
+    } else if (idColName === 'target') {
+      const idMatch = idRaw.match(/(?:#|imgt:)?([A-Za-z0-9_]+)/)
+      id = idMatch ? idMatch[1] : idRaw
+    } else if (idColName === 'moa') {
+      const idMatch = idRaw.match(/(?:#|imgt:)?(MOA_[A-Za-z0-9_]+)/)
+      id = idMatch ? idMatch[1] : idRaw
+    } else {
+      id = idRaw
+    }
+
+    let label = (row[labelColName] || '').replace(/^"|"$/g, '').trim()
+    if (!label) label = id
+
+    return { id, label }
+  })
+
+  return entities.filter(e => e.id && e.label)
+}
 
 /**
  * Récupère dynamiquement la liste des anticorps monoclonaux (mAbs) depuis une requête SPARQL.
- *
- * @returns Un tableau d'objets { id, label } où id est du type "mAb_781"
  */
-export async function fetchMabsFromSparql(): Promise<Array<{ id: string, label: string }>> {
+export async function fetchMabsFromSparql(): Promise<Array<{ id: string; label: string }>> {
   const queryUrl = '/templates/mabs.rq'
   const res = await fetch(queryUrl)
   if (!res.ok) throw new Error("Impossible de charger le template SPARQL pour mAbs")
+
   const sparqlQuery = await res.text()
-
   const csv = await fetchData(sparqlQuery)
-  if (!csv) throw new Error("Aucune donnée reçue pour les mAbs")
-  const lines = csv.split('\n').map(line => line.trim()).filter(Boolean)
-  const headerLineIdx = lines.findIndex(line => /^mab\s*,\s*label$/i.test(line))
-  if (headerLineIdx === -1) throw new Error("Aucune ligne d'en-tête valide trouvée dans le CSV")
-  const headers = lines[headerLineIdx].split(',').map(h => h.trim())
-
-  const idIdx = headers.indexOf('mab')
-  const labelIdx = headers.indexOf('label')
-  if (idIdx === -1 || labelIdx === -1) {
-    throw new Error("Colonnes 'mab' ou 'label' manquantes dans le CSV")
-  }
-
-  return lines.slice(headerLineIdx + 1)
-    .map(line => {
-      const cols = line.split(',')
-      if (cols.length < 2) return null
-
-      // Nettoyage de l'URI ou du QName pour extraire un identifiant comme "mAb_781"
-      const idRaw = cols[idIdx].replace(/"/g, '').trim()
-      const idMatch = idRaw.match(/(?:#|imgt:)?(mAb_[A-Za-z0-9_]+)/)
-      const id = idMatch ? idMatch[1] : idRaw
-
-      // Nettoyage du label
-      const labelRaw = cols[labelIdx].replace(/^"|"$/g, '').trim()
-      const label = labelRaw || id
-
-      return { id, label }
-    })
-    .filter((item): item is { id: string; label: string } => !!item)
+  console.log('CSV brut reçu pour mAbs:', csv)
+  const entities = await parseEntitiesList(csv, 'mab', 'label')
+  console.log('Entités mAb extraites:', entities)
+  return entities
 }
 
+/**
+ * Récupère dynamiquement la liste des Targets depuis une requête SPARQL.
+ */
+export async function fetchTargetsFromSparql(): Promise<Array<{ id: string; label: string }>> {
+  const queryUrl = '/templates/queryTarget.rq'
+  const res = await fetch(queryUrl)
+  console.log("Fetch status:", res.status, "URL:", queryUrl)
+  if (!res.ok) throw new Error('Impossible de charger le template SPARQL pour Targets')
 
-const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:'];
+  const sparqlQuery = await res.text()
+  const csv = await fetchData(sparqlQuery)
+  console.log('CSV brut reçu pour Targets:', csv)
+  const entities = await parseEntitiesList(csv, 'target', 'label')
+  console.log('Entités Targets extraites:', entities)
+  return entities
+}
+
+/**
+ * Récupère dynamiquement la liste des MOAs depuis une requête SPARQL.
+ */
+export async function fetchMOAsFromSparql(): Promise<Array<{ id: string; label: string }>> {
+  const queryUrl = '/templates/queryMoa.rq'
+  const res = await fetch(queryUrl)
+  console.log("Fetch status:", res.status, "URL:", queryUrl)
+  if (!res.ok) throw new Error('Impossible de charger le template SPARQL pour MOAs')
+
+  const sparqlQuery = await res.text()
+  const csv = await fetchData(sparqlQuery)
+  console.log('CSV brut reçu pour MOAs:', csv)
+  const entities = await parseEntitiesList(csv, 'moa', 'label')
+  console.log('Entités MOAs extraites:', entities)
+  return entities
+}
+
+/**
+ * Génère une requête SPARQL pour la documentation d'une entité
+ */
+const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:']
 
 export async function renderDocQuery(iri: string): Promise<string> {
   const rawDocQuery = await fetch('/templates/documentation.rq').then(r => r.text())
 
   // Vérifie si iri commence par l'un des préfixes déclarés OU déjà <http...>
-  const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix));
+  const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix))
   if (!isPrefixed && !iri.startsWith('<')) {
     iri = `<${iri}>`
   }
-  const fullIRI = iri.startsWith('<') ? iri : `<${iri}>`
+
   return rawDocQuery.replace(/\$ENTITY/g, iri)
 }

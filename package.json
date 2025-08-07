@@ -12,10 +12,11 @@
     "core-js": "^3.8.3",
     "d3": "^7.9.0",
     "danfojs": "^1.2.0",
+    "papaparse": "^5.5.3",
     "vis": "^4.21.0-EOL",
     "vis-data": "^7.1.9",
     "vue": "^3.2.13",
-    "vue-multiselect": "^3.2.0",
+    "vue-multiselect": "^3.3.1",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
     "@babel/eslint-parser": "^7.12.16",
     "@types/node": "^22.15.3",
     "@types/nunjucks": "^3.2.6",
+    "@types/papaparse": "^5.3.16",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-vue": "^5.2.3",

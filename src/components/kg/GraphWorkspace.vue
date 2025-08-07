@@ -12,7 +12,8 @@
         :showRelations="showRelationLabels"
         @update:selectedTypes="selectedTypes = $event"
         @update:showRelations="showRelationLabels = $event"
-
+        :focusType="focusType"
+        @update:focusType="handleFocusTypeChange"
       />
     </SidebarNav>
 
@@ -25,15 +26,16 @@
         {{ tabSubtitles[currentNav] || '' }}
       </p>
 
-      <h1 class="centered-title">Exploration Centered to Monoclonal Antibody</h1>
+      <h1 class="centered-title">Exploration Centered on {{ focusTypeLabel }}</h1>
 
       <div class="search-bar-center">
         <multiselect
-          v-model="selectedMabs"
-          :options="allMabOptions"
+          v-if="currentExplorationConfig"
+          v-model="currentExplorationConfig.selectedRef.value"
+          :options="currentExplorationConfig.optionsRef.value"
           :multiple="true"
           :searchable="true"
-          placeholder="Sélectionnez un ou plusieurs mAb"
+          :placeholder="`Sélectionnez un ou plusieurs ${currentExplorationConfig.label}`"
           label="label"
           track-by="id"
           :close-on-select="false"
@@ -45,36 +47,39 @@
         :triples="filteredResults"
         :showRelations="showRelationLabels"
         @node-click="handleShowDoc"
-
       />
 
-      <button
-        v-if="filteredResults.length"
-        class="toggle-table-btn"
-        @click="showTable = !showTable"
-      >
-        {{ showTable ? 'Masquer' : 'Afficher' }} le tableau
-      </button>
-
-      <div v-if="showTable && filteredResults.length" class="results-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Subject</th>
-              <th>Relation</th>
-              <th>Object</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(result, index) in filteredResults" :key="index">
-              <td>{{ result.subject }}</td>
-              <td>{{ result.relation }}</td>
-              <td>{{ result.object }}</td>
-              <td>{{ result.type }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Dropdown pour le tableau -->
+      <div class="table-section" v-if="filteredResults.length">
+        <div class="section-header" @click="toggleTableDropdown">
+          <h4>
+            Data Table 
+            <span class="dropdown-arrow" :class="{ 'open': showTable }">▼</span>
+          </h4>
+        </div>
+        
+        <div class="dropdown-content" v-show="showTable">
+          <div class="results-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Relation</th>
+                  <th>Object</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="result in filteredResults" :key="result.subject + '-' + result.relation + '-' + result.object">
+                  <td>{{ result.subject }}</td>
+                  <td>{{ result.relation }}</td>
+                  <td>{{ result.object }}</td>
+                  <td>{{ result.type }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div v-if="currentNav === 'imgt-kg'" style="text-align:center; margin-top:3rem;">
@@ -100,21 +105,38 @@
 </template>
 
 <script setup lang="ts">
-/* eslint-disable */
 import { onMounted, ref, computed, watch } from 'vue'
 import SidebarNav from './SidebarNav.vue'
 import SidebarFilters from './SidebarFilters.vue'
 import GraphDisplay from '../shared/GraphDisplay.vue'
 import { fetchData, replaceAllOccurrences, subjectNodeType, objectNodeType, type Triple } from '@/utils/Fonctions'
-import { renderQuery, fetchMabsFromSparql } from '@/utils/queryLoader'
+import { 
+  renderQuery, 
+  fetchMabsFromSparql, 
+  fetchTargetsFromSparql, 
+  fetchMOAsFromSparql,
+  renderDocQuery
+} from '@/utils/queryLoader'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import DocumentationDrawer from './DocumentationDrawer.vue'
-import { renderDocQuery } from '@/utils/queryLoader'
 import { fetchDocData } from '@/utils/Fonctions'
+/* eslint-disable */
+// Types
+type FocusType = 'mAb' | 'Target' | 'MOA'
+type TripleWithType = Triple & { type: string; objectType?: string }
 
-const selectedMabs = ref<Array<{ id: string; label: string }>>([])
-const allMabOptions = ref<Array<{ id: string; label: string }>>([])
+interface ExplorationConfig {
+  value: FocusType
+  label: string
+  templateUrl: string
+  fetchFunction: () => Promise<Array<{ id: string; label: string }>>
+  selectedRef: Ref<Array<{ id: string; label: string }>>
+  optionsRef: Ref<Array<{ id: string; label: string }>>
+  
+}
+
+// États de base
 const showRelationLabels = ref(false)
 const navItems = [
   { id: 'imgt-mab-kg', label: 'IMGT-MAB-KG' },
@@ -127,14 +149,74 @@ const tabSubtitles = {
 }
 
 const currentNav = ref('imgt-mab-kg')
-const query = ref('')
-type TripleWithType = Triple & { type: string; objectType?: string }
+const focusType = ref<FocusType>('mAb')
+
+// États pour chaque type d'exploration
+const selectedMabs = ref<Array<{ id: string; label: string }>>([])
+const selectedTargets = ref<Array<{ id: string; label: string }>>([])
+const selectedMOA = ref<Array<{ id: string; label: string }>>([])
+
+const allMabOptions = ref<Array<{ id: string; label: string }>>([])
+const allTargetOptions = ref<Array<{ id: string; label: string }>>([])
+const allMOAOptions = ref<Array<{ id: string; label: string }>>([])
+
+
+// Configuration unifiée des explorations
+const explorationConfigs: Record<FocusType, ExplorationConfig> = {
+  mAb: {
+    value: 'mAb',
+    label: 'mAb',
+    templateUrl: '/templates/query.rq',
+    fetchFunction: fetchMabsFromSparql,
+    selectedRef: selectedMabs,
+    optionsRef: allMabOptions
+  },
+  Target: {
+    value: 'Target',
+    label: 'Target',
+    templateUrl: '/templates/queryTarget.rq',
+    fetchFunction: fetchTargetsFromSparql,
+    selectedRef: selectedTargets,
+    optionsRef: allTargetOptions
+  },
+  MOA: {
+    value: 'MOA',
+    label: 'MOA',
+    templateUrl: '/templates/queryMoa.rq',
+    fetchFunction: fetchMOAsFromSparql,
+    selectedRef: selectedMOA,
+    optionsRef: allMOAOptions
+  }
+  
+}
+
+console.log('Options chargées pour Target:', allTargetOptions.value)
+console.log('Options chargées pour MOA:', allMOAOptions.value)
+// Observe les changements de options
+watch(allTargetOptions, (newOptions) => {
+  console.log('allTargetOptions updated:', newOptions)
+})
+
+// Observe les changements dans la sélection
+watch(selectedTargets, (newSelection) => {
+  console.log('selectedTargets changed:', newSelection)
+})
+
+
+// États pour les résultats
 const results = ref<TripleWithType[]>([])
 const errorMessage = ref('')
 const allNodeTypes = ref<string[]>([])
 const selectedTypes = ref<string[]>([])
 const showTable = ref(false)
 
+// Computed properties
+const currentExplorationConfig = computed(() => explorationConfigs[focusType.value])
+
+const focusTypeLabel = computed(() => {
+  const config = explorationConfigs[focusType.value]
+  return config ? `${config.label}` : ''
+})
 
 const filteredResults = computed(() => {
   if (!selectedTypes.value.length) return results.value
@@ -152,53 +234,85 @@ const filteredResults = computed(() => {
   )
 })
 
+// Fonctions
 function handleNav(id: string) {
   currentNav.value = id
 }
 
-onMounted(async () => {
-  try {
-    allMabOptions.value = await fetchMabsFromSparql()
-    console.log('allMabOptions:', allMabOptions.value);
-  } catch (error) {
-    errorMessage.value = "Erreur lors du chargement des mAbs"
-    console.error(error)
-  }
-})
+function toggleTableDropdown() {
+  showTable.value = !showTable.value
+}
 
-// --- Recherche automatique à chaque changement de sélection ---
-watch(selectedMabs, () => {
-  search()
-})
+async function loadOptionsForFocusType(focusType: FocusType) {
+  const config = explorationConfigs[focusType]
+  if (config && config.optionsRef.value.length === 0) {
+    try {
+      config.optionsRef.value = await config.fetchFunction()
+      console.log(`Options chargées pour ${config.label}:`, config.optionsRef.value)
+    } catch (error) {
+      errorMessage.value = `Erreur lors du chargement des ${config.label}`
+      console.error(error)
+    }
+  }
+}
+
+function handleFocusTypeChange(newFocus: FocusType) {
+  console.log('Changement de focus type vers:', newFocus)
+  focusType.value = newFocus
+  
+  // Vide toutes les sélections
+  Object.values(explorationConfigs).forEach(config => {
+    config.selectedRef.value = []
+  })
+  
+  // Charge les options pour le nouveau type
+  loadOptionsForFocusType(newFocus)
+  
+  // Efface les résultats précédents
+  results.value = []
+  allNodeTypes.value = []
+  selectedTypes.value = []
+}
 
 async function search() {
-  if (!selectedMabs.value.length) {
-    errorMessage.value = "Veuillez sélectionner au moins un mAb."
-    results.value = []
-    return
-  }
-
   errorMessage.value = ''
   results.value = []
 
+  const config = explorationConfigs[focusType.value]
+  if (!config) {
+    errorMessage.value = `Type d'exploration non supporté: ${focusType.value}`
+    return
+  }
+
+  const entities = config.selectedRef.value
+  if (!entities.length) {
+    errorMessage.value = `Veuillez sélectionner au moins un ${config.label}.`
+    return
+  }
+
   try {
-    const sparqlQuery = await renderQuery("/templates/query.rq", selectedMabs.value)
+    const sparqlQuery = await renderQuery(config.templateUrl, entities)
+    console.log(`Requête SPARQL pour ${config.label}:`, sparqlQuery)
     const csvData = await fetchData(sparqlQuery)
+    console.log(`CSV reçu pour ${config.label} :`, csvData)
     console.log('SPARQL envoyée :', sparqlQuery)
     const parsed = parseCSVResults(csvData)
+    
+
     console.log('CSV reçu :', csvData)
-    const enriched: TripleWithType[] = parsed.map(triple => {
-      const subjectType = subjectNodeType(triple.subject, triple.relation)
-      const objType = objectNodeType(triple.relation)
-      return {
-        ...triple,
-        type: subjectType,
-        objectType: objType !== 'defaultnode' ? objType : undefined
-      }
-    })
+    
+    // Enrichir type d'entités
+    const enriched = parsed.map(triple => ({
+      ...triple,
+      type: subjectNodeType(triple.subject, triple.relation),
+      objectType: (objectNodeType(triple.relation) !== 'defaultnode') 
+        ? objectNodeType(triple.relation) 
+        : undefined,
+    }))
 
     results.value = enriched
-
+    
+    // Met à jour la liste des types visibles
     const typesSet = new Set<string>()
     enriched.forEach(triple => {
       typesSet.add(triple.type)
@@ -206,12 +320,9 @@ async function search() {
         typesSet.add(triple.objectType)
       }
     })
-    const uniqueTypes = Array.from(typesSet).filter(type => type !== 'defaultnode')
-    allNodeTypes.value = uniqueTypes
-    selectedTypes.value = [...uniqueTypes]
+    allNodeTypes.value = Array.from(typesSet).filter(t => t !== 'defaultnode')
+    selectedTypes.value = [...allNodeTypes.value]
 
-    query.value = ""
-    showTable.value = false
   } catch (error) {
     errorMessage.value = (error as Error).message
     results.value = []
@@ -241,15 +352,29 @@ function parseCSVResults(csv: string): Triple[] {
   })  
 }
 
-// === Gestion documentation drawer ===
+// Lifecycle
+onMounted(async () => {
+  await loadOptionsForFocusType(focusType.value)
+})
 
-// === Drawer ===
+// Watchers
+watch(focusType, async (newFocusType) => {
+  await loadOptionsForFocusType(newFocusType)
+})
+
+// Watch pour déclencher la recherche quand les sélections changent
+watch([selectedMabs, selectedTargets, selectedMOA], () => {
+  search()
+})
+
+// === Gestion documentation drawer ===
 type DocDataRow = {
   property: string
   propertyLabel: string | null
   value: string
   valueLabel: string | null
 }
+
 const docData = ref<DocDataRow[]>([])
 const currentIRI = ref('')
 const currentLabel = ref('')
@@ -306,8 +431,6 @@ function shortenURI(uri?: string | null): string {
   if (!uri) return '(inconnu)'
   return uri.replace(/^.*[#/]/, '')
 }
-
-
 </script>
 
 <style scoped>
@@ -334,19 +457,64 @@ function shortenURI(uri?: string | null): string {
   display: flex;
   gap: 1rem;
 }
-.toggle-table-btn {
-  margin: 1rem 0;
-  font-size: 1.1rem;
-  background: #3498db;
-  color: white;
-  border: none;
+
+.table-section {
+  margin: 2rem 0;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 0.7rem 1.5rem;
-  cursor: pointer;
+  overflow: hidden;
 }
+
+.section-header {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.section-header:hover {
+  background: #e9ecef;
+}
+
+.section-header h4 {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  color: #333;
+}
+
+.dropdown-arrow {
+  transition: transform 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-content {
+  padding: 1rem;
+  background: white;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .results-table {
-  width: 90%;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
 }
 .results-table table {
   width: 100%;
@@ -379,7 +547,6 @@ function shortenURI(uri?: string | null): string {
   color: #555;
   font-size: 1.1rem;
   margin-bottom: 1.2rem;
-  font-weight: 400;
   font-style: italic;
 }
 </style>
