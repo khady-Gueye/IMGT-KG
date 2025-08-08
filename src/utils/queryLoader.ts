@@ -1,5 +1,8 @@
 import { fetchData } from './Fonctions'
 import Papa from 'papaparse'
+import { replaceAllOccurrences, type Triple } from '@/utils/Fonctions'
+import { ref } from 'vue'
+import { cpSync } from 'fs'
 
 /**
  * Charge un template SPARQL et injecte dynamiquement une clause VALUES.
@@ -32,6 +35,49 @@ export async function renderQuery(
   return finalQuery
 }
 
+
+const errorMessage = ref('')
+interface Doublet {
+  target: string;
+  label: string;
+}
+
+function parseCSVResults(csv: string): Doublet[] {
+  if (!csv || typeof csv !== 'string') return [];
+  
+  // Split lines and clean them up
+  const lines = csv.split('\n')
+    .map(line => line.trim())
+    .filter(line => line);
+    
+  if (lines.length < 2) return [];
+  
+  // Parse headers
+  const headers = lines[0].split(',').map(h => h.trim());
+  const requiredHeaders = ['target', 'label'];
+  
+  // Validate headers
+  for (const rh of requiredHeaders) {
+    if (!headers.includes(rh)) {
+      // Instead of errorMessage.value, consider throwing an error or returning an error object
+      throw new Error(`CSV error: Missing '${rh}' header.`);
+      // Or return { error: `CSV error: Missing '${rh}' header.` };
+    }
+  }
+  
+  // Process data rows
+  return lines.slice(1).map(line => {
+    // Simple CSV parsing - this doesn't handle quoted values with commas
+    const values = line.split(',');
+    
+    return {
+      target: (values[headers.indexOf("target")] || "").trim(),
+      label: (values[headers.indexOf("label")] || "").trim(),
+      // If you need replaceAllOccurrences, define it or import it
+    };
+  });
+}
+
 /**
  * Fonction générique pour parser les entités depuis un CSV, utilisant PapaParse pour robustesse.
  */
@@ -62,8 +108,8 @@ async function parseEntitiesList(
       const idMatch = idRaw.match(/(?:#|imgt:)?(mAb_[A-Za-z0-9_]+)/)
       id = idMatch ? idMatch[1] : idRaw
     } else if (idColName === 'target') {
-      const idMatch = idRaw.match(/(?:#|imgt:)?([A-Za-z0-9_]+)/)
-      id = idMatch ? idMatch[1] : idRaw
+      const idMatch = idRaw//.match(/(?:#|imgt:)?([A-Za-z0-9_]+)/)
+      id = idMatch //? idMatch[1] : idRaw
     } else if (idColName === 'moa') {
       const idMatch = idRaw.match(/(?:#|imgt:)?(MOA_[A-Za-z0-9_]+)/)
       id = idMatch ? idMatch[1] : idRaw
@@ -84,11 +130,12 @@ async function parseEntitiesList(
  * Récupère dynamiquement la liste des anticorps monoclonaux (mAbs) depuis une requête SPARQL.
  */
 export async function fetchMabsFromSparql(): Promise<Array<{ id: string; label: string }>> {
-  const queryUrl = '/templates/mabs.rq'
+  const queryUrl = './templates/mabs.rq'
   const res = await fetch(queryUrl)
   if (!res.ok) throw new Error("Impossible de charger le template SPARQL pour mAbs")
 
   const sparqlQuery = await res.text()
+  console.log('Requête SPARQL pour mAbs :', sparqlQuery)
   const csv = await fetchData(sparqlQuery)
   console.log('CSV brut reçu pour mAbs:', csv)
   const entities = await parseEntitiesList(csv, 'mab', 'label')
@@ -100,35 +147,82 @@ export async function fetchMabsFromSparql(): Promise<Array<{ id: string; label: 
  * Récupère dynamiquement la liste des Targets depuis une requête SPARQL.
  */
 export async function fetchTargetsFromSparql(): Promise<Array<{ id: string; label: string }>> {
-  const queryUrl = '/templates/queryTarget.rq'
+  const queryUrl = './templates/ListeTarget.rq'
   const res = await fetch(queryUrl)
   console.log("Fetch status:", res.status, "URL:", queryUrl)
   if (!res.ok) throw new Error('Impossible de charger le template SPARQL pour Targets')
+    const query_list_target = `
+  PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  
+  SELECT DISTINCT ?target ?label
+  WHERE { 
+    ?target a ncit:C25702; 
+            rdfs:label ?label
+  }
+  `;
+  // const sparqlQuery = await res.text()
+  // console.log("Requête SPARQL pour Targets :", sparqlQuery)
+  const csv = await fetchData(query_list_target)
+  console.log("CSV brut reçu pour Target :", csv)
 
-  const sparqlQuery = await res.text()
-  const csv = await fetchData(sparqlQuery)
-  console.log('CSV brut reçu pour Targets:', csv)
-  const entities = await parseEntitiesList(csv, 'target', 'label')
-  console.log('Entités Targets extraites:', entities)
-  return entities
+  let parsedEntities
+  try {
+    parsedEntities = await parseEntitiesList(csv, 'target', 'label')
+    console.log("Entités Target extraites :", parsedEntities)
+  } catch (err) {
+    console.error("Erreur parsing CSV Target :", err, "CSV:", csv)
+    throw err // Pour bien propager l'erreur à l'appelant
+  }
+
+  return parsedEntities
 }
+
 
 /**
  * Récupère dynamiquement la liste des MOAs depuis une requête SPARQL.
  */
 export async function fetchMOAsFromSparql(): Promise<Array<{ id: string; label: string }>> {
-  const queryUrl = '/templates/queryMoa.rq'
+  const queryUrl = './templates/queryMoa.rq'
   const res = await fetch(queryUrl)
   console.log("Fetch status:", res.status, "URL:", queryUrl)
   if (!res.ok) throw new Error('Impossible de charger le template SPARQL pour MOAs')
 
   const sparqlQuery = await res.text()
   const csv = await fetchData(sparqlQuery)
-  console.log('CSV brut reçu pour MOAs:', csv)
-  const entities = await parseEntitiesList(csv, 'moa', 'label')
-  console.log('Entités MOAs extraites:', entities)
-  return entities
+  console.log('CSV brut reçu pour MOAs :', csv)
+
+  let parsedEntities: Array<{ id: string; label: string }>
+  try {
+    const results = Papa.parse(csv, {
+      header: true,
+      skipEmptyLines: true,
+    })
+
+    if (results.errors.length > 0) {
+      console.error('Erreurs durant parsing CSV MOA:', results.errors)
+      return []
+    }
+
+    const data = results.data as Array<Record<string, string>>
+    parsedEntities = data.map(row => {
+      const idRaw = (row['moa'] || '').replace(/"/g, '').trim()
+      const idMatch = idRaw.match(/(?:#|imgt:)?(MOA_[A-Za-z0-9_]+)/)
+      const id = idMatch ? idMatch[1] : idRaw
+      let label = (row['label'] || '').replace(/^"|"$/g, '').trim()
+      if (!label) label = id
+      return { id, label }
+    }).filter(e => e.id && e.label)
+
+    console.log('Entités MOA extraites :', parsedEntities)
+  } catch (err) {
+    console.error('Erreur parsing CSV MOA :', err, 'CSV:', csv)
+    throw err
+  }
+
+  return parsedEntities
 }
+
 
 /**
  * Génère une requête SPARQL pour la documentation d'une entité
