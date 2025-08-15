@@ -1,0 +1,53 @@
+PREFIX sio: <http://semanticscience.org/resource/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX bao: <http://www.bioassayontology.org/bao#>
+
+SELECT DISTINCT ?subject ?relation ?object
+WHERE {
+  VALUES ?mab { __VALUES__ }
+
+  ## MOA lié au mAb
+  {
+    ?mab bao:BAO_0000196 ?moa .
+    BIND(?mab AS ?subject)
+    BIND(bao:BAO_0000196 AS ?relation)
+    BIND(?moa AS ?object)
+  }
+
+  UNION
+  ## Indication clinique liée au mAb
+  {
+    ?mab imgt:hasClinicalIndication ?clinicalIndication .
+    BIND(?mab AS ?subject)
+    BIND(imgt:hasClinicalIndication AS ?relation)
+    BIND(?clinicalIndication AS ?object)
+  }
+
+  UNION
+  ## Target liée au mAb 
+  {
+    ?mab sio:SIO_000291 ?target .
+    BIND(?mab AS ?subject)
+    BIND(sio:SIO_000291 AS ?relation)
+    BIND(?target AS ?object)
+  }
+
+  UNION
+  ## Triplets liés au MOA lui-même
+  {
+    ?mab bao:BAO_0000196 ?moa .
+    ?moa ?relation ?object .
+    BIND(?moa AS ?subject)
+  }
+
+  FILTER (
+    !REGEX(STR(?relation), "link|pharm|list|rdf-schema|skos|foaf|has_rank|commun_name")
+  )
+}

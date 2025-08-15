@@ -1,0 +1,28 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX bao: <http://www.bioassayontology.org/bao#>
+
+SELECT DISTINCT ?subject ?relation ?object WHERE {
+
+  VALUES ?center { __CENTER__ }
+
+  {
+    ?center ?relation ?object .
+    BIND(?center AS ?subject)
+  }
+  UNION
+  {
+    ?subject ?relation ?center .
+    BIND(?center AS ?object)
+  }
+
+  FILTER (
+    !REGEX(STR(?relation), "link|pharm|list|rdf-schema|skos|foaf|has_rank|commun_name")
+  )
+}

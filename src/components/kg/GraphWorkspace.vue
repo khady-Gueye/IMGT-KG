@@ -174,7 +174,7 @@ const explorationConfigs: Record<FocusType, ExplorationConfig> = {
   Target: {
     value: 'Target',
     label: 'Target',
-    templateUrl: '/templates/queryTarget.rq',
+    templateUrl: '/templates/TargetQuery.rq',
     fetchFunction: fetchTargetsFromSparql,
     selectedRef: selectedTargets,
     optionsRef: allTargetOptions
@@ -292,6 +292,8 @@ async function search() {
 
   try {
     const sparqlQuery = await renderQuery(config.templateUrl, entities)
+    console.log("Requête SPARQL envoyée :", sparqlQuery)  
+    
     console.log(`Requête SPARQL pour ${config.label}:`, sparqlQuery)
     const csvData = await fetchData(sparqlQuery)
     console.log(`CSV reçu pour ${config.label} :`, csvData)

@@ -23,8 +23,8 @@ export async function renderQuery(
   // Génère la clause VALUES en fonction du template
   const values = selectedEntities.map(entity => {
     // Si l'id contient déjà le préfixe, on l'utilise tel quel
-    if (entity.id.includes(':') || entity.id.startsWith('<')) {
-      return entity.id
+    if (entity.id.includes(':') || entity.id.startsWith('http')) {
+      return `<${entity.id}>`
     }
     // Sinon, on ajoute le préfixe imgt:
     return `imgt:${entity.id}`
@@ -183,40 +183,29 @@ export async function fetchTargetsFromSparql(): Promise<Array<{ id: string; labe
  * Récupère dynamiquement la liste des MOAs depuis une requête SPARQL.
  */
 export async function fetchMOAsFromSparql(): Promise<Array<{ id: string; label: string }>> {
-  const queryUrl = './templates/queryMoa.rq'
-  const res = await fetch(queryUrl)
-  console.log("Fetch status:", res.status, "URL:", queryUrl)
-  if (!res.ok) throw new Error('Impossible de charger le template SPARQL pour MOAs')
+  console.log("Chargement des mAbs pour l'exploration MOA...")
 
-  const sparqlQuery = await res.text()
-  const csv = await fetchData(sparqlQuery)
-  console.log('CSV brut reçu pour MOAs :', csv)
-
-  let parsedEntities: Array<{ id: string; label: string }>
-  try {
-    const results = Papa.parse(csv, {
-      header: true,
-      skipEmptyLines: true,
-    })
-
-    if (results.errors.length > 0) {
-      console.error('Erreurs durant parsing CSV MOA:', results.errors)
-      return []
+  // Requête SPARQL directe pour obtenir tous les mAbs et leur label
+  const query_list_mabs_for_moa = `
+ PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+ PREFIX bao: <http://www.bioassayontology.org/bao#>
+    SELECT DISTINCT ?mab (COALESCE(?innLabel, STRAFTER(STR(?mab), "imgt:")) AS ?label)
+    WHERE {
+      ?target imgt:isTargetOf ?mab .
+      ?mab bao:BAO_0000196 ?moa .
+      OPTIONAL { ?mab imgt:inn_name ?innLabel }
     }
+  `
 
-    const data = results.data as Array<Record<string, string>>
-    parsedEntities = data.map(row => {
-      const idRaw = (row['moa'] || '').replace(/"/g, '').trim()
-      const idMatch = idRaw.match(/(?:#|imgt:)?(MOA_[A-Za-z0-9_]+)/)
-      const id = idMatch ? idMatch[1] : idRaw
-      let label = (row['label'] || '').replace(/^"|"$/g, '').trim()
-      if (!label) label = id
-      return { id, label }
-    }).filter(e => e.id && e.label)
+  const csv = await fetchData(query_list_mabs_for_moa)
+  console.log("CSV brut reçu pour mAbs (exploration MOA) :", csv)
 
-    console.log('Entités MOA extraites :', parsedEntities)
+  let parsedEntities
+  try {
+    parsedEntities = await parseEntitiesList(csv, 'mab', 'label')
+    console.log("Liste mAbs pour exploration MOA :", parsedEntities)
   } catch (err) {
-    console.error('Erreur parsing CSV MOA :', err, 'CSV:', csv)
+    console.error("Erreur parsing CSV mAbs pour MOA :", err, "CSV:", csv)
     throw err
   }
 
@@ -224,19 +213,97 @@ export async function fetchMOAsFromSparql(): Promise<Array<{ id: string; label: 
 }
 
 
+
 /**
  * Génère une requête SPARQL pour la documentation d'une entité
  */
 const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:']
 
-export async function renderDocQuery(iri: string): Promise<string> {
-  const rawDocQuery = await fetch('/templates/documentation.rq').then(r => r.text())
 
-  // Vérifie si iri commence par l'un des préfixes déclarés OU déjà <http...>
-  const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix))
-  if (!isPrefixed && !iri.startsWith('<')) {
-    iri = `<${iri}>`
+export async function renderDocQuery(iri: string): Promise<string> {
+  // Préfixes communs
+  const commonPrefixes = `
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+`;
+
+  // Vérifie si l'IRI doit être formaté
+  const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix));
+  const iriFormatted = (!iri.startsWith('http') && !isPrefixed && !iri.startsWith('<'))
+    ? `<${iri}>`
+    : iri;
+
+  let rawDocQuery: string;
+
+  // Cas 1 : Nom de ressource (pas http, pas préfixé, pas déjà namespace:localPart)
+  if (!iri.startsWith('http') && !iri.includes(':') && !isPrefixed) {
+    console.log("IRI debug", iri);
+
+    rawDocQuery = `
+${commonPrefixes}
+SELECT ?property ?propertyLabel ?value ?valueLabel
+WHERE {
+    ?target ?property ?value ;
+      rdfs:label "${iri}" .
+    
+}
+ORDER BY ?property
+`;
+  } 
+  // Cas 2 : IRI complet ou préfixé
+  else {
+    rawDocQuery = `
+${commonPrefixes}
+SELECT ?property ?propertyLabel ?value ?valueLabel
+WHERE {
+    ${iriFormatted} ?property ?value .
+}
+ORDER BY ?property
+`;
   }
 
-  return rawDocQuery.replace(/\$ENTITY/g, iri)
+  console.log("Requête SPARQL générée :", rawDocQuery);
+  return rawDocQuery;
+}
+
+
+// Récupère les URLs d'images pour chaque mAb depuis l'endpoint SPARQL
+export async function fetchMabImagesFromSparql(): Promise<{ [key: string]: string }> {
+  const sparqlQuery = `
+  PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+
+SELECT ?mab ?picture WHERE {
+  ?sub a imgt:Construct ;
+imgt:isConstructOf ?mab ;
+  imgt:hasReceptorFormat ?obj .
+  ?obj <http://xmlns.com/foaf/0.1/depiction> ?picture
+} 
+  `;
+  const csv = await fetchData(sparqlQuery);
+  const lines = csv.split('\n').map(line => line.trim()).filter(Boolean);
+  
+  const mabImages: { [key: string]: string } = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(',');
+    if (parts.length < 2) continue;
+    const mab = parts[0].trim();
+    let picture = parts[1].trim();
+    // Nettoyage des guillemets crochets superflus
+    picture = picture.replace(/^["[]+|["\]]+$/g, '').trim();
+  
+    const idMatch = mab.match(/(?:#|imgt:)?(mAb_[A-Za-z0-9_]+)/);
+    if (idMatch) {
+      mabImages[idMatch[1]] = picture;
+    }
+  }
+  
+  
+  return mabImages;
 }

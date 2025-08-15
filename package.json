@@ -14,7 +14,7 @@
     "danfojs": "^1.2.0",
     "papaparse": "^5.5.3",
     "vis": "^4.21.0-EOL",
-    "vis-data": "^7.1.9",
+    "vis-data": "^7.1.10",
     "vue": "^3.2.13",
     "vue-multiselect": "^3.3.1",
     "vue-router": "^4.5.1"

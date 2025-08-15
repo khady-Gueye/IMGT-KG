@@ -16,8 +16,9 @@ SELECT DISTINCT ?subject ?relation ?object WHERE {
     BIND(?mab AS ?subject)
   }
   UNION {
-    ?subject imgt:isTargetOf ?mab ;
-             ?relation ?object .
+    ?s imgt:isTargetOf ?mab ;
+          rdfs:label ?subject;
+          ?relation ?object .
   }
   UNION {
     ?subject imgt:isConstructOf ?mab ;
