@@ -16,11 +16,12 @@ import AppHeader from './components/layout/AppHeader.vue'
 import TabsNavigation from './components/layout/TabsNavigation.vue'
 import HomeCover from './components/home/HomeCover.vue'
 import GraphWorkspace from './components/kg/GraphWorkspace.vue' // <-- Utilise bien ce composant
-
+import AboutView from './components/home/AboutView.vue'  // <-- importe ton nouveau composant
 // Définition des onglets
 const tabs = [
   { id: 'home', label: 'Home', component: HomeCover },
-  { id: 'explore', label: 'Explore', component: GraphWorkspace }
+  { id: 'explore', label: 'Explore', component: GraphWorkspace },
+  { id: 'about', label: 'À propos', component: AboutView }  // <-- nouvel onglet
 ]
 const currentTab = ref('home')
 

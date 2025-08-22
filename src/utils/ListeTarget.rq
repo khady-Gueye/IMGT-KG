@@ -1,14 +1,8 @@
-PREFIX sio: <http://semanticscience.org/resource/>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX faldo: <http://biohackathon.org/resource/faldo#>
-PREFIX obo: <http://purl.obolibrary.org/obo/>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
-PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?mab (COALESCE(?innLabel, STRAFTER(STR(?mab), "imgt:")) AS ?label) WHERE {
-  ?target imgt:isTargetOf ?mab .
-  OPTIONAL { ?mab imgt:inn_name ?innLabel }
-}
+Select distinct ?target ?label 
+where { ?target a ncit:C25702; 
+	rdfs:label ?label}
+
+

@@ -1,0 +1,6 @@
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+Select distinct ?target ?label 
+where { ?target a ncit:C25702; 
+	rdfs:label ?label}

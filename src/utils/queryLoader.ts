@@ -217,11 +217,16 @@ export async function fetchMOAsFromSparql(): Promise<Array<{ id: string; label: 
 /**
  * Génère une requête SPARQL pour la documentation d'une entité
  */
-const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:']
+const qnamePrefixes = ['imgt:', 'hgnc:', 'ncit:', 'obo:', 'owl:', 'faldo:', 'skos:', 'rdf:', 'rdfs:'];
 
-
+/**
+ * Génère la requête SPARQL pour récupérer la documentation d'une entité selon l'IRI ou le label.
+ * Supporte IRI préfixés, complets, ou noms simples (label).
+ *
+ * @param iri - L'IRI, le qname, ou un label simple de l’entité à interroger
+ * @returns Requête SPARQL complète à envoyer au endpoint
+ */
 export async function renderDocQuery(iri: string): Promise<string> {
-  // Préfixes communs
   const commonPrefixes = `
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX faldo: <http://biohackathon.org/resource/faldo#>
@@ -233,36 +238,35 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 `;
 
-  // Vérifie si l'IRI doit être formaté
+  // Vérifie si iri est préfixé connu ou qname
   const isPrefixed = qnamePrefixes.some(prefix => iri.startsWith(prefix));
+
+  // Formatte iri pour injection dans requête (encadre d’< > si URI complète)
   const iriFormatted = (!iri.startsWith('http') && !isPrefixed && !iri.startsWith('<'))
     ? `<${iri}>`
-    : iri;
+    : iri.startsWith('<') ? iri : isPrefixed ? iri : `<${iri}>`;
 
   let rawDocQuery: string;
 
-  // Cas 1 : Nom de ressource (pas http, pas préfixé, pas déjà namespace:localPart)
-  if (!iri.startsWith('http') && !iri.includes(':') && !isPrefixed) {
-    console.log("IRI debug", iri);
-
+  // Cas label simple (pas de ":" ni préfixe, pas URI complète)
+  if (!iri.startsWith('http') && !iri.includes(':') && !isPrefixed && !iri.startsWith('<')) {
     rawDocQuery = `
 ${commonPrefixes}
 SELECT ?property ?propertyLabel ?value ?valueLabel
 WHERE {
-    ?target ?property ?value ;
-      rdfs:label "${iri}" .
-    
+  ?target ?property ?value ;
+          rdfs:label "${iri}" .
 }
 ORDER BY ?property
 `;
-  } 
-  // Cas 2 : IRI complet ou préfixé
+  }
+  // Cas classique IRI complet ou préfixé
   else {
     rawDocQuery = `
 ${commonPrefixes}
 SELECT ?property ?propertyLabel ?value ?valueLabel
 WHERE {
-    ${iriFormatted} ?property ?value .
+  ${iriFormatted} ?property ?value .
 }
 ORDER BY ?property
 `;
@@ -273,37 +277,47 @@ ORDER BY ?property
 }
 
 
+
+/* eslint-disable */
 // Récupère les URLs d'images pour chaque mAb depuis l'endpoint SPARQL
 export async function fetchMabImagesFromSparql(): Promise<{ [key: string]: string }> {
   const sparqlQuery = `
-  PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
-
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
 SELECT ?mab ?picture WHERE {
   ?sub a imgt:Construct ;
-imgt:isConstructOf ?mab ;
-  imgt:hasReceptorFormat ?obj .
+       imgt:isConstructOf ?mab ;
+       imgt:hasReceptorFormat ?obj .
   ?obj <http://xmlns.com/foaf/0.1/depiction> ?picture
-} 
-  `;
+}`;
+
   const csv = await fetchData(sparqlQuery);
-  const lines = csv.split('\n').map(line => line.trim()).filter(Boolean);
-  
+  const lines = csv.split("\n").map(line => line.trim()).filter(Boolean);
+
   const mabImages: { [key: string]: string } = {};
 
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(',');
+  // détecte header line (souvent "mab,picture")
+  const headerLineIdx = lines.findIndex(line => /^mab\s*,\s*picture$/i.test(line));
+  if (headerLineIdx === -1) return {};
+
+  for (let i = headerLineIdx + 1; i < lines.length; i++) {
+    const parts = lines[i].split(",");
     if (parts.length < 2) continue;
-    const mab = parts[0].trim();
-    let picture = parts[1].trim();
-    // Nettoyage des guillemets crochets superflus
-    picture = picture.replace(/^["[]+|["\]]+$/g, '').trim();
-  
+
+    const mab = parts[0].replace(/"/g, "").trim();
+    let picture = parts[1].replace(/"/g, "").trim();
+
+    // extraire ID court de type "mAb_546"
     const idMatch = mab.match(/(?:#|imgt:)?(mAb_[A-Za-z0-9_]+)/);
-    if (idMatch) {
-      mabImages[idMatch[1]] = picture;
+    if (!idMatch) continue;
+
+    const mabId = idMatch[1];
+
+    // stocker image uniquement si c'est une vraie URL valide
+    if (picture.startsWith("http")) {
+      mabImages[mabId] = picture;
     }
   }
-  
-  
+
+  console.log("Dictionnaire mAb → image :", mabImages);
   return mabImages;
 }

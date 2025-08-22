@@ -2,10 +2,9 @@
  *  utils/Fonctions.ts  –  helpers SPARQL → vis-network
  * --------------------------------------------------------*/
 import { DataSet } from 'vis-data';
-import type {Node, Edge, Options } from 'vis-network';
+import type { Node, Edge, Options } from 'vis-network';
 import { Network } from 'vis-network';
 import { fetchMabImagesFromSparql } from './queryLoader';
-
 /* ───────────────────────────────
    Interfaces & types
    ─────────────────────────────── */
@@ -15,21 +14,17 @@ interface VisNode extends Node {
   color: string;
   shape?: string;
   title?: string;
-  image?: string;
-  size?: number;
-  font?: object;
 }
 
 interface VisEdge extends Edge {
   id:    string;
   from:  string;
   to:    string;
-  title?: string;
-  font?: { align?: string };
   label?:  string;
   arrows?: string;
   color?:  string;
-  originalLabel?: string;
+  originalLabel?: string;  // Ajout de cette propriété
+  //solver?: string; // Ajout de cette propriété pour le solver
 }
 
 export interface Triple {
@@ -37,8 +32,6 @@ export interface Triple {
   relation: string;
   object:   string;
 }
-
-export type MabImagesMap = { [id: string]: string };
 
 export type NodeType =
   | 'mAb_Level'
@@ -53,11 +46,11 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
-  mAb_Level   : '#CC0000',
+  mAb_Level   : '#CC0000', // la couleur du mAb est la couleur rouge
   Target      : '#FF00FF',
   Construct   : '#0000FF',
   MOA         : ' #FF6633 ',
-  Product     : ' #006600 ',
+  Product     : ' #006600 ',  //Green
 };
 
 /* ───────────────────────────────
@@ -82,18 +75,23 @@ const PREFIX_MAPPINGS: Record<string, string> = {
 
 /* =========================================================
  *  1) Helpers de requête SPARQL
- * ======================================================== */
+ * ========================================================*/
 export async function fetchData(requete: string): Promise<string> {
   const response = await fetch(
     `https://www.imgt.org/fuseki/MabkgKg/?query=${encodeURIComponent(requete)}`,
-    { method: 'GET', headers: { Accept: 'text/csv' } }
+    {  method: "POST",
+      headers: {
+        "Content-Type": "application/sparql-query",
+        "Accept": "text/csv"
+      },
+      body: requete}
   );
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   return response.text();
 }
 /* =========================================================
  *  8) Fonction fetch vers l'endpoint SPARQL 
- * ======================================================== */
+ * ========================================================*/
 type SparqlRawBinding = {
   property: { value: string },
   propertyLabel?: { value: string },
@@ -130,7 +128,11 @@ export async function fetchDocData(sparqlQuery: string): Promise<Array<{
   }))
 }
 
-// Pour remplacer les préfixes dans une chaîne
+/* =========================================================
+ * Replace les préfixes dans une chaîne de caractères 
+ * ========================================================*/
+
+
 export function replaceAllOccurrences(str: string): string {
   return Object.entries(PREFIX_MAPPINGS).reduce(
     (acc, [key, val]) => acc.replace(new RegExp(key, 'g'), val),
@@ -138,14 +140,22 @@ export function replaceAllOccurrences(str: string): string {
   );
 }
 
-// Détermination du type d'un nœud par relation
+/* =========================================================
+ *  2) Détermination du type d'un nœud selon la relation
+ * ========================================================*/
 export function subjectNodeType(subject: string, relation: string): NodeType {
+  // Typage par la relation pour les Target
   if (relation === 'imgt:isTargetOf') {
     return 'Target';
   }
+  
+  // Pour les autres types, on utilise d'abord le typage par URI
   const subjectType = nodeTypeFct(subject);
-  if (subjectType !== 'defaultnode') return subjectType;
-
+  if (subjectType !== 'defaultnode') {
+    return subjectType;
+  }
+  
+  // Sinon typage par la relation pour les autres types
   switch (relation) {
     case 'imgt:isConstructOf'    : return 'Construct';
     case 'imgt:isProductOf'      :
@@ -157,175 +167,171 @@ export function subjectNodeType(subject: string, relation: string): NodeType {
 
 export function objectNodeType(relation: string): NodeType {
   switch (relation) {
-    case 'imgt:hasTarget'       : return 'Target';
-    case 'imgt:hasStudyProduct' : return 'Product';
-    case 'bao:BAO_0000196'      : return 'MOA';
-    default                     : return 'defaultnode';
+    case 'imgt:hasTarget'        : return 'Target';  // Ajout de la détection de Target côté objet
+    case 'imgt:hasStudyProduct'  : return 'Product';
+    case 'bao:BAO_0000196'       : return 'MOA';
+    default                      : return 'defaultnode';
   }
 }
 
 export const nodeColor = (t: NodeType) => COLORS[t] ?? COLORS.defaultnode;
 
-// Typage d’un nœud via son URI
+
+/* =========================================================
+ *  3) Nouvelle table "type dominant" pour chaque nœud
+ * ========================================================*/
+
 function nodeTypeFct(uri: string): NodeType {
+  //  Si le sujet est un anticorps mAb
   if (uri.includes('/mAb_') || uri.includes('imgt:mAb_')) {
     return 'mAb_Level';
-  } else if (uri.includes("imgt:Construct_")) {
+  }
+  else if (uri.includes("imgt:Construct_")) {
     return 'Construct';
-  } else if (uri.includes("imgt:Product_")) {
+  }
+  else if (uri.includes("imgt:Product_")) {
     return 'Product';
-  } else if (uri.includes("imgt:MOA_")) {
+  }
+  else if (uri.includes("imgt:MOA_")) {
     return 'MOA';
-  } else {
+  }
+  else {
     return 'defaultnode';
   }
 }
 
-// Nettoyage et construction de la map d’images mAb
-  export async function fetchAndCleanMabImages(): Promise<MabImagesMap> {
-    const rawMabImages: MabImagesMap = await fetchMabImagesFromSparql();
-  
-    // Nettoyer les URLs pour garder uniquement le lien direct
-    const cleanMabImages = Object.fromEntries(
-      Object.entries(rawMabImages).map(([id, urlRaw]) => {
-        // Expression régulière pour extraire l’URL entre crochets markdown [texte](url “…“)
-        const markdownUrlMatch = urlRaw.match(/\[([^\]]+)\]\(([^ )]+)(?: "[^"]*")?\)/);
-        const url = markdownUrlMatch ? markdownUrlMatch[1] : urlRaw
-          .replace(/^\[+/, '')
-          .replace(/\]+$/, '')
-          .replace(/^"+|"+$/g, '')
-          .trim();
-        return [id, url];
-      })
-    );
-  
-    console.log('Mab images nettoyées:', Object.entries(cleanMabImages).slice(0, 5));
-    return cleanMabImages;
-  }
+/* =========================================================
+ *  4) Construction DataSet pour vis-network avec homogénéisation des Target
+ * ========================================================*/
+export function prepareVisData(triples: Triple[], showRelations: boolean = false, 
+mabImages: Record<string, string> = {}
 
-
-
-
-/* ===========================================================================
- * Construction DataSet pour vis-network avec injection images mAb
- * =========================================================================== */
-export function prepareVisData(
-  triples: Triple[],
-  showRelations: boolean = false,
-  mabImages: MabImagesMap = {}
 ): {
+  nodes: DataSet<VisNode>;
+  edges: DataSet<VisEdge>;
+} {
+  const nodes = new DataSet<VisNode>();
+  const edges = new DataSet<VisEdge>();
   
-  nodes: DataSet<VisNode>; edges: DataSet<VisEdge> } {
-  const nodes: DataSet<VisNode> = new DataSet<VisNode>();
-  const edges: DataSet<VisEdge> = new DataSet<VisEdge>();
-
-
-  // Identifier les nœuds Target
-  const targetNodes: Set<string> = new Set<string>();
+  // Première étape : identifier tous les nœuds Target par leurs relations
+  const targetNodes = new Set<string>();
+  
   triples.forEach(({ subject, relation, object }) => {
+    // Identifier les Target par la relation
     if (relation === 'imgt:isTargetOf') {
       targetNodes.add(subject);
     } else if (relation === 'imgt:hasTarget') {
       targetNodes.add(object);
     }
   });
-  console.log('Début prepareVisData, mabImages:', Object.keys(mabImages));
-
-  // Fonction d’ajout de nœud avec prise en compte images mAb
+  
+  // Deuxième étape : créer les nœuds avec les types appropriés
   const setNode = (id: string, color: string) => {
     if (nodes.get(id)) return;
-    
-    // Si c’est un mAb (id commence par mAb_) et qu’on a une image
-    if (id.startsWith('mAb_') && mabImages[id]) {
-      console.log(`Ajout nœud avec image: id=${id}, imageURL=${mabImages[id]}`);
+  
+    const mabMatch = id.match(/mAb_[A-Za-z0-9_]+/);
+    const mabId = mabMatch ? mabMatch[0] : null;
+    const imageUrl = mabId ? mabImages[mabId] : null;
+  
+    if (imageUrl) {
       nodes.add({
         id,
         label: shortenURI(id),
         title: id,
-        shape: 'image',
-        image: mabImages[id],
-        size: 32,
-        font: { multi: 'md' },
-        color: color,  // important pour vis-network
+        shape: "circularImage",
+        image: imageUrl,
+        brokenImage: undefined,   // fallback géré manuellement ci-dessous
+        size: 25,
+        color: COLORS.mAb_Level,
       });
+  
+      // fallback : si l'image ne se charge pas → repasse en "dot"
+      const img = new Image();
+      img.onload = () => console.log(`✅ Image OK pour ${id} :`, imageUrl);
+      img.onerror = () => {
+        console.warn(` Image invalide pour ${id}, fallback en dot`);
+        nodes.update({
+          id,
+          label: shortenURI(id),
+          title: id,
+          shape: "dot",
+          color,
+          size: 25,
+        });
+      };
+      img.src = imageUrl;
       return;
     }
-
-
-    // sinon nœud classique
-    if (targetNodes.has(id)) {
-      nodes.add({
-        id,
-        label: shortenURI(id),
-        title: id,
-        color: nodeColor('Target'),
-        shape: 'dot',
-        size: 15,
-      });
-      return;
-    }
-
-
+  
+    // fallback direct si pas d'image connue
     nodes.add({
       id,
       label: shortenURI(id),
       title: id,
-      color: color,
-      shape: 'dot',
-      size: 15,
+      color,
+      shape: "dot",
+      size: 25,
     });
   };
+  
 
-
-  // Parcours de tous les triplets pour créer nœuds + arêtes
+  // Troisième étape : traiter tous les triplets pour créer les nœuds et les arêtes
   triples.forEach(({ subject, relation, object }) => {
+    // Détermination du type de sujet
     const subjectType = targetNodes.has(subject) ? 'Target' : subjectNodeType(subject, relation);
     setNode(subject, nodeColor(subjectType));
-
-
+    
+    // Détermination du type d'objet
     let objectType = targetNodes.has(object) ? 'Target' : objectNodeType(relation);
     if (objectType === 'defaultnode') {
       objectType = nodeTypeFct(object);
     }
-    const objectColor = objectType !== 'defaultnode' ? nodeColor(objectType) : nodeColor(subjectType);
+    
+    let objectColor: string;
+    if (objectType !== 'defaultnode') {
+      objectColor = nodeColor(objectType);
+    } else {
+      objectColor = nodes.get(subject)?.color || COLORS.defaultnode;
+    }
+    
     setNode(object, objectColor);
-
-
+    
+    // Ajout de l'arête
     edges.add({
       id: `${subject}-${relation}-${object}`,
       from: subject,
       to: object,
       title: shortenURI(relation),
       arrows: 'to',
-      font: { align: 'top' },
+      font: {align: 'top'},
       color: '#FFB8AD',
-      label: showRelations ? relation : '',
-      originalLabel: relation,
+      label:showRelations ? relation: '',
+      originalLabel: relation  // Ajout de la propriété originale pour le label
+
     });
   });
-  console.log(
-    'Fin prepareVisData, mabImages sample:', 
-    Object.entries(mabImages).slice(0, 5)
-  );
+
   return { nodes, edges };
 }
 
+
 /* =========================================================
- * Options vis.js
- * ======================================================== */
+ *  5) Options vis.js
+ * ========================================================*/
 export function getVisOptions(): Options {
   return {
     nodes: {
       font: { size: 8, face: 'Roboto', strokeWidth: 3 },
       borderWidth: 2,
       shapeProperties: { useBorderWithImage: true },
-      size: 100,
+      size :100,
+
     },
     edges: {
       width: 0.7,
-      length: 250,
-      font: { size: 8, strokeWidth: 3 },
-      smooth: { enabled: true, type: 'dynamic', roundness: 0.5 },
+      length:250, // ← Augmente la longueur des arêtes
+      font: { size:8, strokeWidth: 3 },
+      smooth: { enabled: true, type: 'dynamic', roundness: 0.5 }, // change 'cubicBezier' to 'dynamic' for dynamic edges or to 'straightCross' for straight edges
     },
     physics: {
       enabled: true,
@@ -338,15 +344,18 @@ export function getVisOptions(): Options {
         damping: 0.4,
         avoidOverlap: 1,
       },
+    
     },
+   
+    
     interaction: { tooltipDelay: 200, hideEdgesOnDrag: true },
   };
 }
 
-
 /* =========================================================
- * Initialisation du réseau vis.js
- * ======================================================== */
+ *  6) Initialisation du réseau vis.js
+ * ========================================================*/
+
 type CustomVisNode = {
   id: string;
   label?: string;
@@ -360,37 +369,61 @@ export async function initVisNetwork(
   onNodeClick?: (iri: string) => void,
   showRelations: boolean = false
 ) {
-  const mabImages = await fetchAndCleanMabImages();
-  console.log('Mab images map:', mabImages);
-
+  // ---- Charger les données (images incluses)
+  const mabImages = await fetchMabImagesFromSparql();
   const { nodes, edges } = prepareVisData(triples, showRelations, mabImages);
-  console.log('Nodes and edges prepared');
 
   const network = new Network(container, { nodes, edges }, getVisOptions());
 
+  // ---- Gérer les clics 
   if (onNodeClick) {
-    network.on('click', event => {
-      if (event.nodes.length > 0) {
-        const nodeId = event.nodes[0];
-        const nodeData = nodes.get(nodeId) as unknown as CustomVisNode | undefined;
-        console.log('Clicked node:', nodeId, nodeData);
-        if (nodeData?.id) {
-          onNodeClick(nodeData.id);
-        } else if (nodeData?.iri) {
-          onNodeClick(nodeData.iri);
-        } else {
-          onNodeClick(nodeId);
-        }
+    // Sélection simple 
+network.on("click", event => {
+  if (event.nodes.length > 0) {
+    console.log("Node selected:", event.nodes);
+    // ici tu pourrais recadrer sur le node, afficher détails légers, etc.
+  }
+});
+
+// Documentation seulement au double-clic
+if (onNodeClick) {
+  network.on("doubleClick", event => {
+    if (event.nodes.length > 0) {
+      const nodeId = event.nodes[0];
+      const nodeItem = nodes.get(nodeId);
+
+      if (!nodeItem || Array.isArray(nodeItem)) return;
+
+      const customNodeData = nodeItem as CustomVisNode;
+      onNodeClick(customNodeData.iri || customNodeData.id || nodeId);
+    }
+  });
+}
+
+  }
+
+  // ---- RENDU JOLI + CENTRÉ DÈS CHARGEMENT
+  network.once("stabilizationIterationsDone", function () {
+    // Physique stop, sinon ça continue à "danser"
+    network.stopSimulation();
+
+    // Ajuster vue : recentre et zoom-out pour tout afficher
+    network.fit({
+      animation: {
+        duration: 1000,   // animation douce (1s)
+        easingFunction: "easeInOutQuad"
       }
     });
-  }
+  });
 
   return { network, nodes, edges };
 }
 
+
+
 /* =========================================================
- * Divers
- * ======================================================== */
+ *  7) Utilitaires divers
+ * ========================================================*/
 export const shortenURI = (uri: string): string => {
   const short = replaceAllOccurrences(uri);
   return short.length > 30 ? short.split(/[/#]/).pop() || short : short;
@@ -402,12 +435,14 @@ export function isMabUri(uri: string): boolean {
 
 const getNodeShape = (_uri: string) => 'dot';
 
+
+
 /* =========================================================
- * Filtrage de doublons inverses
- * ======================================================== */
+ *  8) Filtrage de doublons inverses
+ * ========================================================*/
 const manualInverseRelations: Record<string, string> = {
-  'imgt:someSpecialRelation': 'imgt:otherSpecialRelation',
-  'imgt:otherSpecialRelation': 'imgt:someSpecialRelation',
+  'imgt:someSpecialRelation'  : 'imgt:otherSpecialRelation',
+  'imgt:otherSpecialRelation' : 'imgt:someSpecialRelation',
 };
 
 const autoGenerateInverse = (relation: string): string | null => {
@@ -430,9 +465,9 @@ export function filterInverseEdges(triples: Triple[]): Triple[] {
   const seen = new Set<string>();
 
   triples.forEach(triple => {
-    const key = `${triple.subject}->${triple.object}`;
-    const inverseKey = `${triple.object}->${triple.subject}`;
-    const inverseRel = getInverseRelation(triple.relation);
+    const key         = `${triple.subject}->${triple.object}`;
+    const inverseKey  = `${triple.object}->${triple.subject}`;
+    const inverseRel  = getInverseRelation(triple.relation);
 
     if (!seen.has(inverseKey) || (inverseRel && triple.relation === inverseRel)) {
       filtered.push(triple);

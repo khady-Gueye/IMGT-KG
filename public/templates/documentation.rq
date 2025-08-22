@@ -15,6 +15,6 @@ WHERE {
     ?value rdfs:label ?valuelabel .
     FILTER(isIRI(?value))
  }
- FILTER Contains(str(?property),"subclassesDisjoint")
+
 }
-ORDER BY ?property
+ORDER BY ?property  ?valueLabel

@@ -14,44 +14,52 @@
       <ul class="doc-list">
         <li v-for="(row, index) in docData" :key="index" class="doc-item">
           <strong class="doc-label">
-            
-            <template v-if="(row.property)">
-              <span
-                class="doc-link"
-                @click="$emit('show-doc', row.property)"
-                :title="row.property ?? undefined"
-              >
-                {{ row.propertyLabel || shortenURI(row.property) }}
-              </span> :
-            </template>
-            <template v-else-if="isUri(row.property)">
-                <a 
-                  :href="row.property ?? undefined" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  :title="row.property ?? undefined"
+            <template v-if="row.property">
+              <template v-if="isInternalUri(row.property)">
+                <span
+                  class="doc-link"
+                  @click="$emit('show-doc', row.property)"
+                  :title="row.property"
+                  tabindex="0"
+                  @keydown.enter="$emit('show-doc', row.property)"
+                >
+                  {{ row.propertyLabel || shortenURI(row.property) }}
+                </span> :
+              </template>
+              <template v-else-if="isUri(row.property)">
+                <a
+                  :href="row.property"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :title="row.property"
                 >
                   {{ row.propertyLabel || shortenURI(row.property) }}
                 </a> :
               </template>
+              <template v-else>
+                {{ row.propertyLabel || row.property }}
+              </template>
+            </template>
             <span v-else class="missing-value">(propriété inconnue)</span>
           </strong>
 
           <span class="doc-value">
             <template v-if="row.value">
-              <template v-if="(row.value)">
+              <template v-if="isInternalUri(row.value)">
                 <span
                   class="doc-link"
                   @click="$emit('show-doc', row.value)"
                   :title="row.value"
+                  tabindex="0"
+                  @keydown.enter="$emit('show-doc', row.value)"
                 >
                   {{ row.valueLabel || shortenURI(row.value) }}
                 </span>
               </template>
               <template v-else-if="isUri(row.value)">
-                <a 
-                  :href="row.value" 
-                  target="_blank" 
+                <a
+                  :href="row.value"
+                  target="_blank"
                   rel="noopener noreferrer"
                   :title="row.value"
                 >
@@ -67,26 +75,31 @@
         </li>
       </ul>
     </div>
-    <!-- Bouton de retour si possible -->
-    <div class="drawer-footer">
-  <button
-    class="back-btn"
-    :disabled="!canGoBack"
-    @click="$emit('doc-back')"
-  >← Back</button>
-  <button
-    class="forward-btn"
-    :disabled="!canGoForward"
-    @click="$emit('doc-forward')"
-    style="margin-left: 1em;"
-  >Forward →</button>
-</div>
 
+    <!-- Boutons navigation -->
+    <div class="drawer-footer">
+      <button
+        class="back-btn"
+        :disabled="!canGoBack"
+        @click="$emit('doc-back')"
+        aria-label="Return to previous documentation"
+      >
+        ← Back
+      </button>
+      <button
+        class="forward-btn"
+        :disabled="!canGoForward"
+        @click="$emit('doc-forward')"
+        aria-label="Go to next documentation"
+      >
+        Forward →
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-/* eslint-disable */
+/* eslint-disable */ 
 defineProps<{
   visible: boolean
   entityIRI: string
@@ -96,17 +109,16 @@ defineProps<{
     propertyLabel: string | null
     value: string | null
     valueLabel: string | null
- 
   }>
-  canGoBack?: boolean   
+  canGoBack?: boolean
   canGoForward?: boolean
 }>()
 
-defineEmits(['close', 'show-doc', 'doc-back' , 'doc-forward'])
+defineEmits(['close', 'show-doc', 'doc-back', 'doc-forward'])
 
 function shortenURI(uri?: string | null): string {
   if (!uri) return '(inconnu)'
-  return uri.replace(/^.*[#/]/, '')
+  return uri.replace(/^.*[\/#]/, '')
 }
 
 function isUri(value: string | null | undefined): boolean {
@@ -117,9 +129,19 @@ function isUri(value: string | null | undefined): boolean {
 
 function isInternalUri(value: string | null | undefined): boolean {
   if (!value) return false
-  return value.startsWith("https://www.imgt.org/imgt-ontology#") || value.startsWith("imgt:")
+  const prefixes = [
+    'imgt:',
+    'https://www.imgt.org/imgt-ontology#',
+    'obo:',
+    'rdf:',
+    'rdfs:',
+    'skos:',
+    'ncit:',
+    'sio:'
+  ]
+  const trimmed = value.trim()
+  return prefixes.some(prefix => trimmed.startsWith(prefix))
 }
-
 </script>
 
 <style scoped>
@@ -211,41 +233,17 @@ function isInternalUri(value: string | null | undefined): boolean {
   color: #999;
   font-style: italic;
 }
+
 .drawer-footer {
   width: 100%;
   display: flex;
-  justify-content: space-between; /* cela pousse les 2 boutons aux extrémités  */
+  justify-content: space-between;
   padding: 1em 1.5em;
   border-top: 1px solid #f1f1f1;
   background: #fafbfc;
 }
 
-.back-btn {
-  background: #cfcfcf;
-  color: #fff;
-  padding: 0.5em 1.4em;
-  border-radius: 6px;
-  font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(50,80,150,0.05);
-  transition: background 0.2s;
-}
-
-.back-btn:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-  color: #eee;
-}
-
-.back-btn:not(:disabled):hover {
-  background: #2176ae;
-}
-.doc-link {
-  color: #0056cc;
-  text-decoration: underline;
-  cursor: pointer;
-}
+.back-btn,
 .forward-btn {
   background: #cfcfcf;
   color: #fff;
@@ -254,19 +252,19 @@ function isInternalUri(value: string | null | undefined): boolean {
   font-size: 1rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(50,80,150,0.05);
+  box-shadow: 0 2px 8px rgba(50, 80, 150, 0.05);
   transition: background 0.2s;
 }
 
+.back-btn:disabled,
 .forward-btn:disabled {
   background: #cccccc;
   cursor: not-allowed;
   color: #eee;
 }
 
+.back-btn:not(:disabled):hover,
 .forward-btn:not(:disabled):hover {
   background: #2176ae;
 }
-
-
 </style>
