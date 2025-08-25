@@ -1,4 +1,5 @@
 <template>
+    <div class="home-cover">
   <section class="cover">
     <!-- SVG animé en fond -->
     <svg class="cover-graph-bg" width="100%" height="320" viewBox="0 0 900 320" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -32,9 +33,17 @@
       <span class="tag"> Allele</span>
     </div>
   </section>
+      <!-- ====== Section "À propos" intégrée sous la cover ====== -->
+      <AboutView />
+    </div>
 </template>
+<script setup lang="ts">
+import AboutView from './AboutView.vue';
+
+</script>
 
 <style scoped>
+.home-cover { display: grid; gap: 32px; }
 .cover {
   text-align: center;
   margin-top: 3rem;
