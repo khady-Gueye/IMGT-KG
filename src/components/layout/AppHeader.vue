@@ -4,7 +4,7 @@
         <img src="@/assets/LogoIMGT.png" alt="Logo IMGT" class="logo" />
       </router-link>
       <h1>IMGT Knowledge Graph: Explore and Integrate Immunogenetics Knowledge  </h1>
-    </header>
+   </header>
   </template>
   
   <script setup lang="ts">

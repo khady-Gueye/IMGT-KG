@@ -25,21 +25,47 @@
     <p>Explore, search, and visualize relationships between entities.</p>
     <!-- <button class="cover-btn">Start Exploring</button> -->
     <div class="cover-tags">
-      <span class="tag">Antibody</span>
-      <span class="tag">Target</span>
-      <span class="tag">MOA</span>
-      <span class="tag">Product</span>
-      <span class="tag">Gene</span>
-      <span class="tag"> Allele</span>
-    </div>
-  </section>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('Antibody')" @keydown.enter.prevent="go('Antibody')" @keydown.space.prevent="go('Antibody')">
+          Antibody
+        </span>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('Target')"   @keydown.enter.prevent="go('Target')"   @keydown.space.prevent="go('Target')">
+          Target
+        </span>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('MOA')"      @keydown.enter.prevent="go('MOA')"      @keydown.space.prevent="go('MOA')">
+          MOA
+        </span>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('Product')"  @keydown.enter.prevent="go('Product')"  @keydown.space.prevent="go('Product')">
+          Product
+        </span>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('Gene')"     @keydown.enter.prevent="go('Gene')"     @keydown.space.prevent="go('Gene')">
+          Gene
+        </span>
+        <span class="tag" role="button" tabindex="0"
+              @click="go('Allele')"   @keydown.enter.prevent="go('Allele')"   @keydown.space.prevent="go('Allele')">
+          Allele
+        </span>
+      </div>
+    </section>
       <!-- ====== Section "À propos" intégrée sous la cover ====== -->
       <AboutView />
     </div>
 </template>
 <script setup lang="ts">
+/* eslint-disable */
 import AboutView from './AboutView.vue';
 
+const emit = defineEmits<{
+  (e: 'jump-to-explore', payload: { entity: string }): void
+}>()
+
+function go(entity: string) {
+  emit('jump-to-explore', { entity })
+}
 </script>
 
 <style scoped>
@@ -100,4 +126,6 @@ import AboutView from './AboutView.vue';
   letter-spacing: 0.04em;
   border: 1.5px solid #fff;
 }
+.tag { cursor: pointer; } /* petit bonus d’UX */
+.tag:focus { box-shadow: 0 0 0 3px #ffffff88; }
 </style>

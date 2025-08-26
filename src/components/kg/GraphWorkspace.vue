@@ -21,39 +21,65 @@
     <main class="kg-main">
 
          <!-- Introduction -->
-         <v-row>
-                    <v-col>
-                        <v-card class="mx-auto" title="">
-                            <div class="title text-h5 text-center p-20"><strong>IMGT/MAB-KG</strong>, the IMGT-KG for monoclonal antibodies</div>
-                            <v-card-item>
-                                <div>
-                                    <div class="text-body-2">
-                                        <p>
-Monoclonal antibodies (mAbs) are proteins made in the laboratory that act as natural antibodies.
- They bind specifically to certain targets in the body and stimulate the immune system. The mechanisms of action of mAbs range from detection and destruction of target cells,
- stimulation of immune-mediated cell toxicity, to modulation of the immune system. The mAbs can also carry drugs or radiation to efficiently deliver cell-killing agents to target cells. 
- In order to provide a unique and valuable resource concerning mAbs with therapeutic application, <strong>IMGT&reg;</strong> has developed IMGT/mAb-DB, a database which contains standardized descriptions about mAbs, 
- their targets, clinical indications and other characteristics.
-<br>From an immunogenetics data integration perspective, we built the first FAIR immunogenetics knowledge graph, <strong>IMGT Knowledge graph (IMGT-KG)</strong> to bridge the gap between nucleotide and protein sequences of
- IMGT® databases. In this same perspective, we built <strong>IMGT/MAB-KG</strong>, the IMGT-KG for therapeutic monoclonal antibodies, using semantic web standards and technologies. 
- <strong>IMGT/MAB-KG</strong> is a specific part of IMGT-KG that represents, describes and structures all knowledge of therapeutic mAbs.
-  It is intrinsically connected to the IMGT-KG and reuses terms and relationships from <v-chip class="ma-0 v-chip-link" color="primary" label><a href="http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#">NCIT</a> </v-chip> ,
-   <v-chip class="ma-0 v-chip-link" color="primary" label> <a href="https://mondo.monarchinitiative.org/">MONDO</a> </v-chip> and from some resources of the Open Biological and Biomedical Ontology <v-chip class="ma-0 v-chip-link" color="primary" label> <a href="https://obofoundry.org/">OBO</a></v-chip>.
-                                    
-                                        </p>
-                                        <p> The data model is built as an extended version of IMGT-ONTOLOGY, described in our previous <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://iswc2022.semanticweb.org/wp-content/uploads/2022/11/978-3-031-19433-7_36.pdf">publication</a></v-chip>. Here, we describe only the core elements including concepts and object properties. 
-The data model of  <strong>IMGT/MAB-KG</strong> presents several parts, the core element is the monoclonal antibody represented by a pharmacological substance and an INN molecule (International nonproprietary names). 
-The INN molecule is associated with a receptor that binds to a target, which belongs to a taxon, has a construct which has one or many segments. The construct and its segments have an IMGT label. 
-It also has bibliographical references, a clinical domain, a mechanism of action and its effects. The Pharmacological Substance may have a biosimilar, an origin clone and an associated product. 
-The monoclonal antibody product is produced by a company and has one or more clinical trials. Every clinical trial has a clinical phase and a clinical indication for a disease, which belongs to a clinical domain.
-A clinical trial can be the subject of a decision by an organization with a final status. The pharmacological Substance may be linked to <strong>IMGT-KG</strong> 3D structures elements.</p>
-  <p> For more information on the data model, please read our publication <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2024.1393839/full"> IMGT/mAb-KG: the knowledge graph for therapeutic monoclonal antibodies</a> </p>
-                                    </div>
-                                </div>
-                            </v-card-item>
-                        </v-card>
-                    </v-col>
-                </v-row>
+
+          <v-row>
+  <v-col>
+    <v-expansion-panels v-model="introOpen">
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <span class="text-h6">About IMGT/MAB-KG & Data model</span>
+        </v-expansion-panel-title>
+
+        <v-expansion-panel-text>
+          <!-- ⬇️ on garde ton contenu tel quel, enveloppé dans un card pour le style -->
+          <v-card class="mx-auto" title="">
+            <div class="title text-h5 text-center p-20">
+              <strong>IMGT/MAB-KG</strong>, the IMGT-KG for monoclonal antibodies
+            </div>
+            <v-card-item>
+              <div class="text-body-2">
+                <p>
+                  Monoclonal antibodies (mAbs) are proteins made in the laboratory that act as natural antibodies.
+                  They bind specifically to certain targets in the body and stimulate the immune system. The mechanisms of action of mAbs range from detection and destruction of target cells,
+                  stimulation of immune-mediated cell toxicity, to modulation of the immune system. The mAbs can also carry drugs or radiation to efficiently deliver cell-killing agents to target cells. 
+                  In order to provide a unique and valuable resource concerning mAbs with therapeutic application, <strong>IMGT&reg;</strong> has developed IMGT/mAb-DB, a database which contains standardized descriptions about mAbs, 
+                  their targets, clinical indications and other characteristics.
+                  <br>From an immunogenetics data integration perspective, we built the first FAIR immunogenetics knowledge graph, <strong>IMGT Knowledge graph (IMGT-KG)</strong> to bridge the gap between nucleotide and protein sequences of
+                  IMGT® databases. In this same perspective, we built <strong>IMGT/MAB-KG</strong>, the IMGT-KG for therapeutic monoclonal antibodies, using semantic web standards and technologies. 
+                  <strong>IMGT/MAB-KG</strong> is a specific part of IMGT-KG that represents, describes and structures all knowledge of therapeutic mAbs.
+                  It is intrinsically connected to the IMGT-KG and reuses terms and relationships from
+                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#">NCIT</a></v-chip>,
+                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://mondo.monarchinitiative.org/">MONDO</a></v-chip>
+                  and from some resources of the Open Biological and Biomedical Ontology
+                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://obofoundry.org/">OBO</a></v-chip>.
+                </p>
+
+                <p>
+                  The data model is built as an extended version of IMGT-ONTOLOGY, described in our previous
+                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://iswc2022.semanticweb.org/wp-content/uploads/2022/11/978-3-031-19433-7_36.pdf">publication</a></v-chip>.
+                  Here, we describe only the core elements including concepts and object properties. The data model of <strong>IMGT/MAB-KG</strong> presents several parts, the core element is the monoclonal antibody represented by a pharmacological substance and an INN molecule (International nonproprietary names). 
+                  The INN molecule is associated with a receptor that binds to a target, which belongs to a taxon, has a construct which has one or many segments. The construct and its segments have an IMGT label. 
+                  It also has bibliographical references, a clinical domain, a mechanism of action and its effects. The Pharmacological Substance may have a biosimilar, an origin clone and an associated product. 
+                  The monoclonal antibody product is produced by a company and has one or more clinical trials. Every clinical trial has a clinical phase and a clinical indication for a disease, which belongs to a clinical domain.
+                  A clinical trial can be the subject of a decision by an organization with a final status. The pharmacological Substance may be linked to <strong>IMGT-KG</strong> 3D structures elements.
+                </p>
+
+                <p>
+                  For more information on the data model, please read our publication
+                  <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2024.1393839/full">
+                    IMGT/mAb-KG: the knowledge graph for therapeutic monoclonal antibodies
+                  </a>.
+                </p>
+              </div>
+            </v-card-item>
+          </v-card>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+  </v-col>
+</v-row>
+
+       
 
 
      
@@ -160,9 +186,12 @@ import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import DocumentationDrawer from './DocumentationDrawer.vue'
 import { fetchDocData } from '@/utils/Fonctions'
+import { storeToRefs } from 'pinia'
+import { useExploreStore } from '@/store/explore'
 // import imgUrl from '@/assets/IMGT-MAB-KG-DESC.jpg'
 /* eslint-disable */
 // Types
+const introOpen = ref<number | null>(null) // null = fermé, 0 = ouvert
 type FocusType = 'mAb' | 'Target' | 'MOA'
 type TripleWithType = Triple & { type: string; objectType?: string }
 
@@ -185,7 +214,7 @@ const navItems = [
 ]
 
 const tabSubtitles = {
-  'imgt-mab-kg': 'Knowledge Graph for Monoclonal Antibodies',
+  // 'imgt-mab-kg': 'Knowledge Graph for Monoclonal Antibodies',
   'imgt-kg': 'Integrated Immunogenetics Knowledge Graph (coming soon)'
 }
 
@@ -200,6 +229,9 @@ const selectedMOA = ref<Array<{ id: string; label: string }>>([])
 const allMabOptions = ref<Array<{ id: string; label: string }>>([])
 const allTargetOptions = ref<Array<{ id: string; label: string }>>([])
 const allMOAOptions = ref<Array<{ id: string; label: string }>>([])
+
+const exploreStore = useExploreStore()
+const { selectedEntity } = storeToRefs(exploreStore)
 
 
 // Configuration unifiée des explorations
@@ -474,6 +506,63 @@ function shortenURI(uri?: string | null): string {
   if (!uri) return '(inconnu)'
   return uri.replace(/^.*[#/]/, '')
 }
+async function applyQuickFilter(entity: string) {
+  // Map Accueil -> FocusType supporté ici
+  const map: Record<string, FocusType | undefined> = {
+    Antibody: 'mAb',
+    Target: 'Target',
+    MOA: 'MOA',
+    Product: 'mAb',   // fallback logique
+    Gene: undefined,  // pas encore géré ici
+    Allele: undefined // pas encore géré ici
+  }
+
+  const ft = map[entity]
+  currentNav.value = 'imgt-mab-kg'
+
+  if (!ft) {
+    errorMessage.value = `Entity '${entity}' is not supported yet in this explorer.`
+    return
+  }
+
+  // Change le focus si nécessaire
+  if (focusType.value !== ft) {
+    handleFocusTypeChange(ft) // reset sélections, résultats, etc.
+  }
+
+  // ⚠️ S’assure que les options du focus courant sont bien chargées
+  await loadOptionsForFocusType(ft)
+
+  // ✅ Pré-sélectionne les 3 premiers éléments pour afficher un graphe tout de suite
+  const cfg = explorationConfigs[ft]
+  if (cfg?.optionsRef.value.length) {
+    cfg.selectedRef.value = [cfg.optionsRef.value[0]]
+
+    // Tu as déjà un watcher qui lance search() quand selectedX change.
+    // Donc l’appel explicite n’est pas obligatoire.
+    // Si tu préfères forcer ici, décommente :
+    // await search()
+  }
+}
+
+onMounted(async () => {
+  await loadOptionsForFocusType(focusType.value)
+  if (selectedEntity.value) {
+    await applyQuickFilter(selectedEntity.value)
+    exploreStore.setEntity(null) // on "consomme" la valeur
+  }
+})
+
+watch(selectedEntity, async (val) => {
+  if (val) {
+    await applyQuickFilter(val)
+    exploreStore.setEntity(null)
+  }
+})
+
+
+
+
 </script>
 
 <style scoped>
