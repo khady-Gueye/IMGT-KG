@@ -1,0 +1,21 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Select distinct ?gene ?allele ?seqref ?entity_proto 
+WHERE {
+  ?allele a imgt:Allele ;
+          imgt:isInRefSequence ?seqref ;
+          obo:GENO_0000408 ?gene;
+          imgt:hasFunctionalityType imgt:P .
+  ?seqref	imgt:isInPrototype ?entity_proto ;
+          rdfs:label ?label .
+  OPTIONAL {
+    ?feat imgt:hasImgtLabel imgt:L-PART1 ;
+          imgt:isInPrototype ?entity_proto .
+  }
+  Filter Contains (?label, ("V-REGION")) #pour se focaliser sur les v-genes
+  FILTER (!bound(?feat))
+} LIMIT 100

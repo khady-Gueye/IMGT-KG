@@ -1,0 +1,40 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+
+SELECT  distinct ?struct_label ?complex ?seq_ref ?seq_ref_label ?gene ?chain  ?allele ?entity 
+WHERE {
+      
+    ?spike imgt:hasImgtLabel imgt:SPIKE ;
+  		   obo:TXPO_0000039 ?comp .
+  	?struct a ncit:C13303 ;
+     	imgt:hasImgtLabel ?str_lab ;
+     	obo:TXPO_0000039 ?comp .
+     ?str_lab rdfs:label ?struct_label .
+  
+    ?reg imgt:hasAlignment ?bnode;
+    	obo:BFO_0000050 ?ch.
+    ?ch   rdfs:label ?chain ; 
+          imgt:isChainInStruct ?struct ;.
+
+    ?bnode imgt:forAllele ?al;
+         imgt:has_similarity_score ?with_sim_score .
+	?al obo:GENO_0000408 ?g ; 
+		rdfs:label ?allele ;
+    	imgt:isInRefSequence ?sq .
+	?sq imgt:isInPrototype ?ent ; 
+		  imgt:hasImgtLabel ?sq_label ;
+     	  rdfs:label ?seq_ref .
+     ?ent rdfs:label ?entity .
+?sq_label rdfs:label ?seq_ref_label.
+?g rdfs:label ?gene .
+?comp rdfs:label ?complex .
+
+Filter regex(?seq_ref, "REGION")
+}
+LIMIT 100  

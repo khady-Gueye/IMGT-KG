@@ -1,0 +1,21 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?allele ?proto ?chainlab  WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?dom imgt:isDomainInChain ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel.
+  ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele.
+  ?allele obo:GENO_0000408 ?gene;
+    imgt:isInRefSequence ?core.
+  ?core imgt:isInPrototype ?proto.
+  ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+}
+LIMIT 25 

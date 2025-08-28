@@ -1,0 +1,21 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Select distinct ?allele ?gene ?reference_seq ?functionality ?why ?entity
+WHERE { 
+   ?a a imgt:Allele;
+            obo:GENO_0000408 ?g ; 
+            imgt:isInRefSequence ?seqref ;
+            rdfs:label ?allele;
+            imgt:hasFunctionalityType ?funct .
+  ?seqref imgt:isInPrototype ?e ;
+  rdfs:label ?reference_seq .
+  ?g rdfs:label ?gene.
+  ?e  imgt:has_imgt_qualifier ?why; 
+  rdfs:label ?entity .
+  	?funct rdfs:label ?functionality .  	
+  FILTER (regex (?why, "pseudo")  || regex (?why, "ORF") )
+} LIMIT 200 

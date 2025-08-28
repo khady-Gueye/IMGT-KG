@@ -1,0 +1,23 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+Select distinct ?allele ?reference_sequence ?literature_sequence   ?partiality_seqref ?partiality_seqlit
+WHERE { 
+          ?allele_lit a imgt:Allele ;
+          imgt:isInRefSequence ?seqref ;
+          rdfs:label ?allele ;
+        imgt:isInLitSequence ?seqlit .
+      ?seqref  imgt:partiality ?p_seqref ;
+               rdfs:label ?reference_sequence .
+  ?seqlit  imgt:partiality ?p_litseq ;
+           rdfs:label ?literature_sequence .
+      ?p_litseq  rdfs:label ?partiality_seqlit ;
+                 text:query  "without_partiality" .
+?p_seqref text:query "partial_*" ;
+      rdfs:label ?partiality_seqref .
+
+} LIMIT 200

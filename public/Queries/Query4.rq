@@ -1,0 +1,31 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+    Select distinct ?group ?gene ?seqref ?cdr1 ?cdr1_start ?cdr1_end ?cdr2 ?cdr2_start ?cdr2_end ?cdr3 ?cdr3_start ?cdr3_end 
+    WHERE {
+      ?allele a imgt:Allele ;
+              obo:GENO_0000408 ?gene;
+              imgt:isInRefSequence ?seqref .
+      ?group  text:query "*-Group*" ;
+                                    obo:RO_0002351 ?gene .
+      ?gene obo:GENO_0000413 ?allele .
+      ?seqref obo:BFO_0000051 ?cdr1, ?cdr2, ?cdr3 .
+      ?cdr1 imgt:hasImgtLabel imgt:CDR1-IMGT ;
+            faldo:location ?loc .
+      ?loc 
+        obo:GENO_0000894 ?cdr1_start ;
+        obo:GENO_0000895 ?cdr1_end .
+        ?cdr2 imgt:hasImgtLabel imgt:CDR2-IMGT ;
+            faldo:location ?lo2 .
+      ?lo2 
+        obo:GENO_0000894 ?cdr2_start ;
+        obo:GENO_0000895 ?cdr2_end .
+          ?cdr3 imgt:hasImgtLabel imgt:CDR3-IMGT ;
+            faldo:location ?lo3 .
+      ?lo3
+        obo:GENO_0000894 ?cdr3_start ;
+        obo:GENO_0000895 ?cdr3_end .
+    } LIMIT 100

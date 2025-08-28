@@ -1,0 +1,31 @@
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ncit: <http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#>
+
+SELECT DISTINCT  ?chain_label ?chain_compo ?Taxon ?Related_Taxon  ?imgt3d_link ?Res ?residu ?Numbering
+
+WHERE{
+  ?chain  a  ncit:C41207 ;
+  rdfs:label "Chain-1QLFA" ;
+  imgt:has_imgt_chain_description ?chain_compo;
+  imgt:imgt_link ?imgt3d_link ;
+  imgt:hasImgtLabel ?chainla ;
+  imgt:hasTaxonomyRelatedStructureType ?related_taxon;
+  imgt:isChainInStruct ?struct ;
+
+  imgt:isChainOfRes ?res.
+  ?chainla rdfs:label ?chain_label .
+  ?struct rdfs:label ?struct_id.
+  ?res imgt:abreviation ?residu ;
+       rdfs:label ?Res ;
+       imgt:hasNumbering ?numbering.
+  ?numbering rdfs:label ?Numbering .
+
+  ?related_taxon rdfs:label ?Related_Taxon .
+  
+} 

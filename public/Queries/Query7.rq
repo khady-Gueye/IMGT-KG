@@ -1,0 +1,29 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Chain ?chainlab ?Allele ?with_sim_score ?Gene ?coding_region ?prototype  ?sequence  WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel;
+         rdfs:label ?Chain .
+  ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele;
+         imgt:has_similarity_score ?with_sim_score .
+  ?allele obo:GENO_0000408 ?gene;
+          rdfs:label ?Allele ;
+    imgt:isInRefSequence ?core.
+  ?gene rdfs:label ?Gene .
+  ?core imgt:isInPrototype ?proto; 
+        imgt:hasImgtLabel ?Core .
+  ?Core rdfs:label ?coding_region .
+  ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+  ?proto_label rdfs:label ?prototype .
+  ?seq rdfs:label ?sequence .
+  Filter Regex (?coding_region, "REGION")
+}
+LIMIT 50  

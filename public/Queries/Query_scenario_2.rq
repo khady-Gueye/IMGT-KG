@@ -1,0 +1,25 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+
+
+SELECT DISTINCT  ?struct_id ?Structure ?article ?article_title ?epitope 
+        ?pdb_link ?jmol_visualisation
+WHERE
+{
+	?seq imgt:isCrystalOf ?struct ;
+		 imgt:jmol_visualisation ?jmol_visualisation;
+		 imgt:pdb_link ?pdb_link;
+		 imgt:hasBibliographicReference ?article.
+	?article dc:title ?article_title;
+			 imgt:has_journal ?article_journal.
+	?struct imgt:immune_epitope ?epitope;
+		    rdfs:label ?struct_id;
+			imgt:common_name ?Structure .
+
+} LIMIT 50

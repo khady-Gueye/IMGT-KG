@@ -343,7 +343,7 @@
     </v-row>
 
     <!-- Statistics -->
-    <v-row>
+    <!-- <v-row>
       <v-col>
         <v-card class="card-title mx-auto w-100" title="">
           <div class="title text-h5 text-center p-20"><strong>IMGT-KG</strong> Statistics</div>
@@ -410,7 +410,7 @@
           <v-card-item><div id="top20infproperty"></div></v-card-item>
         </v-card>
       </v-col>
-    </v-row>
+    </v-row> -->
   </section>
 </template>
 
@@ -418,7 +418,6 @@
 /* eslint-disable */
 import { onMounted } from 'vue'
 
-/** Charge un <script> externe une seule fois (CDN ou /public/...) */
 function loadScript (src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) return resolve()
@@ -433,31 +432,54 @@ function loadScript (src: string): Promise<void> {
 
 onMounted(async () => {
   try {
-    // === mêmes CDN que dans ton HTML d'origine ===
-    await loadScript('https://cdn.amcharts.com/lib/5/index.js')
-    await loadScript('https://cdn.amcharts.com/lib/5/percent.js')
-    await loadScript('https://cdn.amcharts.com/lib/5/xy.js')
-    await loadScript('https://cdn.amcharts.com/lib/5/themes/Animated.js')
-    await loadScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js')
+    // 1) Libs UMD (exactement comme dans l’HTML d’origine)
+    await Promise.all([
+      // loadScript('https://cdn.amcharts.com/lib/5/index.js'),
+      // loadScript('https://cdn.amcharts.com/lib/5/percent.js'),
+      // loadScript('https://cdn.amcharts.com/lib/5/xy.js'),
+      // loadScript('https://cdn.amcharts.com/lib/5/themes/Animated.js'),
+      loadScript('https://unpkg.com/vis-network/standalone/umd/vis-network.min.js'),
+    ])
 
-    // === tes scripts locaux (place-les dans /public/SrciptJs/ si besoin) ===
-    // Si tu as converti en TypeScript auto-exécuté, compile-les en .js côté build
-    await loadScript('/SrciptJs/CharPlotKG.js')     // crée les charts amCharts
-    await loadScript('/SrciptJs/SchemaDescrip.js') // dessine les 5 graphes vis-network
+   
+    //    Ils s’exécuteront immédiatement une fois importés.
+    
+    await import('@/scripts/SchemaDescrip')
+    //await import('@/scripts/ChartPlotKG')
+    // await import('@/scripts/ChartPlotMab')
+    // import { initKgCharts } from '@/scripts/CharPlotKG'
+    // initKgCharts()
 
-    // Si un autre bundle expose des fonctions globales, on les appelle si dispo (no-op sinon)
-    const w = window as any
-    w.initKgCharts?.()
-    w.drawGeneNetwork?.()
-    w.drawLocusNetwork?.()
-    w.drawSeqNetwork?.()
-    w.drawChainNetwork?.()
-    w.drawStructNetwork?.()
+    // const w = window as any
+    // w.initKgCharts?.()
+    // w.drawGeneNetwork?.()
+    // w.drawLocusNetwork?.()
+    // w.drawSeqNetwork?.()
+    // w.drawChainNetwork?.()
+    // w.drawStructNetwork?.()
+    // w.drawPieClasse?.()
+    // w.drawTop5Concept?.()
+    // w.drawTop5Property?.()
+    // w.drawTop10Concept?.()
+    // w.drawTop10Property?.()
+    // w.drawTop20Concept?.()
+    // w.drawTop20Property?.()
+    // w.drawTop10bConcept?.()
+    // w.drawTop10bProperty?.()
+    // w.drawTop20bConcept?.()
+    // w.drawTop20bProperty?.()
+    // w.drawTop10infConcept?.()
+    // w.drawTop10infProperty?.()
+    // w.drawTop20infConcept?.()
+    // w.drawTop20infProperty?.()
+    // // Debug rapide :
+    // console.log('vis? ', !!(window as any).vis, 'am5?', !!(window as any).am5)
   } catch (e) {
     console.error(e)
   }
 })
 </script>
+
 
 <style scoped>
 /* Fond gris clair uniquement pour cet onglet */

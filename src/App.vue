@@ -18,6 +18,7 @@ import HomeCover from './components/home/HomeCover.vue'
 import GraphWorkspace from './components/kg/GraphWorkspace.vue' // <-- Utilise bien ce composant
 // import AboutView from './components/home/AboutView.vue'  // <-- importe ton nouveau composant
 import KgDesc from './components/kg/KgDesc.vue'
+import AccessWorkspace from './components/kg/AccessWorkspace.vue'  
 import { useExploreStore } from './store/explore'
 import { nextTick } from 'vue'
 // Définition des onglets
@@ -25,6 +26,7 @@ const tabs = [
   { id: 'home', label: 'Home', component: HomeCover },
   { id: 'explore', label: 'Explore', component: GraphWorkspace },
   { id: 'kgDesc', label: 'IMGT-KG-DESCRIPTION', component: KgDesc }, // 
+  { id: 'access', label: 'IMGT-KG Access',      component: AccessWorkspace }, // ⬅️ NEW
 ]
 
 const currentTab = ref('home')

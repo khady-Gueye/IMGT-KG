@@ -1,0 +1,26 @@
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Sequence3d ?seqT ?imgt3d_link ?pdb_link ?entry_from ?contact_link ?interaction ?jmol_link ?struct_id
+
+WHERE{
+  ?seq a  <http://semanticscience.org/resource/SIO_001100> , ?seqT ;
+  rdfs:label ?Sequence3d ;
+  imgt:contact_analysis ?contact_link ;
+  #imgt:has_amino_sequence ?amino_sequence ;
+  imgt:is_entry_from ?entry_from;
+  imgt:pdb_link ?pdb_link ;
+  imgt:jmol_visualisation ?jmol_link ;
+  imgt:imgt_link ?imgt3d_link ;
+  imgt:isCrystalOf ?struct ;
+  imgt:interaction_paratope_epitope ?interaction .
+  ?struct rdfs:label ?struct_id.
+
+  
+} limit 25
+

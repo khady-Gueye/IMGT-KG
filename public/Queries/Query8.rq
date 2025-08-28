@@ -1,0 +1,45 @@
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Chain ?chainlab ?Allele ?coding_region ?prototype  ?sequence_nucl ?sequence_nucl_type ?entry_id ?sequence3dtype  ?dbase ?imgt_link    WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel;
+         imgt:isChainInStruct ?struct ;
+         rdfs:label ?Chain .
+   ?struct rdfs:label ?struct_id ;
+             imgt:isInCrystal ?entry3d_seq .
+  ?entry3d_seq imgt:is_entry_from ?dbase;
+         imgt:imgt_link ?imgt_link;
+         rdfs:label ?entry_id;
+          a ?sequence3dtype .
+ ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele;
+         imgt:has_similarity_score ?with_sim_score .
+  ?allele obo:GENO_0000408 ?gene;
+          rdfs:label ?Allele ;
+          imgt:isInRefSequence ?core.
+  ?gene rdfs:label ?Gene .
+  ?core imgt:isInPrototype ?proto; 
+        imgt:hasImgtLabel ?Core .
+?Core rdfs:label ?coding_region .
+     ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+  ?proto_label rdfs:label ?prototype .
+  ?seq rdfs:label ?sequence_nucl ; 
+       a ?sequence_nucl_type.
+  Filter Regex (?coding_region, "REGION")
+}
+LIMIT 50  
+

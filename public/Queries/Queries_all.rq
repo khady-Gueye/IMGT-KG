@@ -1,0 +1,428 @@
+
+## Find information on the genes/alleles functionality and why they are not functional in the case of pseudogene for example
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?allele ?gene ?reference_seq ?entity ?why
+WHERE { 
+	?a a imgt:Allele ; 
+		 obo:GENO_0000408 ?g ; 
+		 imgt:isInRefSequence ?sref ;
+		 rdfs:label ?allele ;
+		 imgt:hasFunctionalityType imgt:P .
+
+	?sref imgt:isInPrototype ?e ;
+	      rdfs:label ?reference_seq .
+	?g rdfs:label ?gene .
+?e imgt:has_imgt_qualifier ?why ;
+    imgt:partiality ?pe ; 
+    rdfs:label ?entity .
+FILTER REGEX (?why, "pseudo") 
+} LIMIT 50
+
+
+## Explore crystal structures and the associated external links inluding epitote on IEDB, PUBMED article, PDB link and Jmol visualisation
+
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+
+
+SELECT DISTINCT  ?struct_id ?Structure ?article ?article_title ?epitope 
+        ?pdb_link ?jmol_visualisation
+WHERE
+{
+	?seq imgt:isCrystalOf ?struct ;
+		 imgt:jmol_visualisation ?jmol_visualisation;
+		 imgt:pdb_link ?pdb_link;
+		 imgt:hasBibliographicReference ?article.
+	?article dc:title ?article_title;
+			 imgt:has_journal ?article_journal.
+	?struct imgt:immune_epitope ?epitope;
+		    rdfs:label ?struct_id;
+			imgt:common_name ?Structure .
+
+} LIMIT 50
+
+
+## Find the COVID-19 spike protein  with the associated chains, genes, alleles and genomics reference sequences
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+
+SELECT  distinct ?struct_label ?complex ?seq_ref ?seq_ref_label ?gene ?chain  ?allele ?entity 
+WHERE {
+      
+    ?spike imgt:hasImgtLabel imgt:SPIKE ;
+  		   obo:TXPO_0000039 ?comp .
+  	?struct a obo:NCIT_C13303 ;
+     	imgt:hasImgtLabel ?str_lab ;
+     	obo:TXPO_0000039 ?comp .
+     ?str_lab rdfs:label ?struct_label .
+  
+    ?reg imgt:hasAlignment ?bnode;
+    	obo:BFO_0000050 ?ch.
+    ?ch   rdfs:label ?chain ; 
+          imgt:isChainInStruct ?struct ;.
+
+    ?bnode imgt:forAllele ?al;
+         imgt:has_similarity_score ?with_sim_score .
+	?al obo:GENO_0000408 ?g ; 
+		rdfs:label ?allele ;
+    	imgt:isInRefSequence ?sq .
+	?sq imgt:isInPrototype ?ent ; 
+		  imgt:hasImgtLabel ?sq_label ;
+     	  rdfs:label ?seq_ref .
+     ?ent rdfs:label ?entity .
+?sq_label rdfs:label ?seq_ref_label.
+?g rdfs:label ?gene .
+?comp rdfs:label ?complex .
+
+Filter regex(?seq_ref, "REGION")
+}
+LIMIT 100  
+
+
+## Select Allele wich is partial and for which, it exists complet literature sequence
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+Select distinct ?reference_allele ?reference_sequence ?partiality_seqref ?literature_sequence ?p ?partiality_seqlit
+WHERE { 
+   ?allele_ref a imgt:Allele;
+      rdfs:label ?reference_allele ;
+             imgt:isInRefSequence ?seqref . 
+    	?seqref  imgt:partiality ?p_seqref ;
+               rdfs:label ?reference_sequence ;
+    		     imgt:isLitSequenceOf  ?allele_lit .
+  		?allele_lit imgt:isInRefSequence ?seqlit ;
+      rdfs:label ?literature_sequence .
+  		?p_seqref text:query "partial*" ;
+      rdfs:label ?partiality_seqref .
+ 		?seqlit imgt:partiality ?p_seqlit ;
+      rdfs:label ?partiality_seqlit .
+  		
+} LIMIT 200
+
+## Find why a gene is pseudogene based on its functionality qualifier
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Select distinct ?allele ?gene ?reference_seq ?functionality ?why ?entity
+WHERE { 
+   ?a a imgt:Allele;
+            obo:GENO_0000408 ?g ; 
+            imgt:isInRefSequence ?seqref ;
+            rdfs:label ?allele;
+            imgt:hasFunctionalityType ?funct .
+  ?seqref imgt:isInPrototype ?e ;
+  rdfs:label ?reference_seq .
+  ?g rdfs:label ?gene.
+  ?e  imgt:has_imgt_qualifier ?why; 
+  rdfs:label ?entity .
+  	?funct rdfs:label ?functionality .  	
+  FILTER (regex (?why, "pseudo")  || regex (?why, "ORF") )
+} LIMIT 200 
+
+
+## Select genes which have not a given feature: L-PART-1 for example
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+
+Select distinct ?allele ?gene ?refseq ?entity_proto 
+WHERE { 
+  ?allele a imgt:Allele;
+          obo:GENO_0000408 ?gene;
+       imgt:isInRefSequence ?refseq .
+  ?refseq a faldo:Region;
+          rdfs:label ?label ;
+   	imgt:isInPrototype ?entity_proto .
+OPTIONAL{ ?feat imgt:hasImgtLabel imgt:L-PART1;
+                 imgt:isInPrototype ?entity_proto.}
+  Filter Contains (?label, ("V-REGION")) #pour se focaliser sur les v-genes
+  Filter(!bound(?feat))
+} LIMIT 200
+
+
+
+## Select Groups, genes, alleles and their CDR3-IMGT length
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+    Select distinct ?group ?gene ?seqref ?cdr1 ?cdr1_start ?cdr1_end ?cdr2 ?cdr2_start ?cdr2_end ?cdr3 ?cdr3_start ?cdr3_end 
+    WHERE {
+      ?allele a imgt:Allele ;
+              obo:GENO_0000408 ?gene;
+              imgt:isInRefSequence ?seqref .
+      ?group  text:query "*-Group*" ;
+                                    obo:RO_0002351 ?gene .
+      ?gene obo:GENO_0000413 ?allele .
+      ?seqref obo:BFO_0000051 ?cdr1, ?cdr2, ?cdr3 .
+      ?cdr1 imgt:hasImgtLabel imgt:CDR1-IMGT ;
+            faldo:location ?loc .
+      ?loc 
+        obo:GENO_0000894 ?cdr1_start ;
+        obo:GENO_0000895 ?cdr1_end .
+        ?cdr2 imgt:hasImgtLabel imgt:CDR2-IMGT ;
+            faldo:location ?lo2 .
+      ?lo2 
+        obo:GENO_0000894 ?cdr2_start ;
+        obo:GENO_0000895 ?cdr2_end .
+          ?cdr3 imgt:hasImgtLabel imgt:CDR3-IMGT ;
+            faldo:location ?lo3 .
+      ?lo3
+        obo:GENO_0000894 ?cdr3_start ;
+        obo:GENO_0000895 ?cdr3_end .
+    } LIMIT 100
+
+
+## Select pseudogene which has not L-PART-1
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Select distinct ?gene ?allele ?seqref ?entity_proto 
+WHERE {
+  ?allele a imgt:Allele ;
+          imgt:isInRefSequence ?seqref ;
+          obo:GENO_0000408 ?gene;
+          imgt:hasFunctionalityType imgt:P .
+  ?seqref	imgt:isInPrototype ?entity_proto ;
+          rdfs:label ?label .
+  OPTIONAL {
+    ?feat imgt:hasImgtLabel imgt:L-PART1 ;
+          imgt:isInPrototype ?entity_proto .
+  }
+  Filter Contains (?label, ("V-REGION")) #pour se focaliser sur les v-genes
+  FILTER (!bound(?feat))
+} LIMIT 100
+
+
+
+## Select chains and their allele with allele properties
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?allele ?proto ?chainlab  WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?dom imgt:isDomainInChain ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel.
+  ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele.
+  ?allele obo:GENO_0000408 ?gene;
+    imgt:isInRefSequence ?core.
+  ?core imgt:isInPrototype ?proto.
+  ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+}
+LIMIT 25 
+
+
+## More complex and complete way to describe chain and its association with allele
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Chain ?chainlab ?Allele ?with_sim_score ?Gene ?coding_region ?prototype  ?sequence  WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel;
+         rdfs:label ?Chain .
+  ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele;
+         imgt:has_similarity_score ?with_sim_score .
+  ?allele obo:GENO_0000408 ?gene;
+          rdfs:label ?Allele ;
+    imgt:isInRefSequence ?core.
+  ?gene rdfs:label ?Gene .
+  ?core imgt:isInPrototype ?proto; 
+        imgt:hasImgtLabel ?Core .
+  ?Core rdfs:label ?coding_region .
+  ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+  ?proto_label rdfs:label ?prototype .
+  ?seq rdfs:label ?sequence .
+  Filter Regex (?coding_region, "REGION")
+}
+LIMIT 50  
+
+
+
+## Unification of nucleotide sequences (genemics) and amino acide sequences (proteins)
+
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Chain ?chainlab ?Allele ?coding_region ?prototype  ?sequence_nucl ?sequence_nucl_type ?entry_id ?sequence3dtype ?sequence3D ?dbase ?imgt_link   WHERE {
+  ?reg imgt:hasAlignment ?bnode;
+    obo:BFO_0000050 ?chain.
+  ?chain imgt:hasImgtLabel ?chainlabel;
+         imgt:isChainInStruct ?struct ;
+         rdfs:label ?Chain .
+  ?struct rdfs:label ?struct_id ;
+          imgt:hasEntry ?entry3d_seq .
+  ?entry3d_seq imgt:is_entry_from ?dbase;
+         imgt:imgt_link ?imgt_link;
+         imgt:has_amino_sequence ?sequence3D;
+         rdfs:label ?entry_id;
+         a ?sequence3dtype .
+  ?chainlabel rdfs:label ?chainlab.
+  ?bnode imgt:forAllele ?allele;
+         imgt:has_similarity_score ?with_sim_score .
+  ?allele obo:GENO_0000408 ?gene;
+          rdfs:label ?Allele ;
+    imgt:isInRefSequence ?core.
+  ?gene rdfs:label ?Gene .
+  ?core imgt:isInPrototype ?proto; 
+        imgt:hasImgtLabel ?Core .
+  ?Core rdfs:label ?coding_region .
+     ?proto imgt:hasImgtLabel ?proto_label;
+    imgt:isPrototypeInSeq ?seq.
+  ?proto_label rdfs:label ?prototype .
+  ?seq rdfs:label ?sequence_nucl ; 
+       a ?sequence_nucl_type.
+
+Filter Regex (?coding_region, "REGION")
+  
+}
+LIMIT 50  
+
+
+## Selection of structures their bibliographic reference and the external link to IEDB and Pubmed, we can add more properties on structure like retrieve chains and label and so on
+
+
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?struct_id ?Structure ?article_title  ?article ?article_date  ?epitope
+
+WHERE{
+  ?seq imgt:isCrystalOf ?struct ;
+       imgt:hasBibliographicReference ?article .
+  ?article dc:title ?article_title; 
+           dc:date ?article_date;
+           imgt:has_journal ?article_journal .
+
+      ?struct imgt:immune_epitope ?epitope ; 
+              rdfs:label ?struct_id;
+              imgt:common_name ?Structure .
+  
+} limit 50
+
+
+
+## Retrieve Crystal Structures and their related annotation including external link like jmol visualisation , imgt_display, pdb ...
+
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?Sequence3d ?seqT ?imgt3d_link ?pdb_link ?entry_from ?contact_link ?interaction ?jmol_link ?struct_id
+
+WHERE{
+  ?seq a  <http://semanticscience.org/resource/SIO_001100> , ?seqT ;
+  rdfs:label ?Sequence3d ;
+  imgt:contact_analysis ?contact_link ;
+  #imgt:has_amino_sequence ?amino_sequence ;
+  imgt:is_entry_from ?entry_from;
+  imgt:pdb_link ?pdb_link ;
+  imgt:jmol_visualisation ?jmol_link ;
+  imgt:imgt_link ?imgt3d_link ;
+  imgt:isCrystalOf ?struct ;
+  imgt:interaction_paratope_epitope ?interaction .
+  ?struct rdfs:label ?struct_id.
+
+  
+} limit 25
+
+
+##Description of a particular chain(chain-1QLFA)
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX imgt: <https://www.imgt.org/imgt-ontology#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX so: <http://purl.obolibrary.org/obo/so#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT  ?chain_label ?chain_compo ?Taxon ?Related_Taxon  ?imgt3d_link ?Res ?residu ?Numbering
+
+WHERE{
+  ?chain  a  obo:NCIT_C41207 ;
+  rdfs:label "Chain-1QLFA" ;
+  imgt:has_imgt_chain_description ?chain_compo;
+  imgt:imgt_link ?imgt3d_link ;
+  imgt:hasImgtLabel ?chainla ;
+  imgt:hasTaxonomyRelatedStructureType ?related_taxon;
+  imgt:isChainInStruct ?struct ;
+
+  imgt:isChainOfRes ?res.
+  ?chainla rdfs:label ?chain_label .
+  ?struct rdfs:label ?struct_id.
+  ?res imgt:abreviation ?residu ;
+       rdfs:label ?Res ;
+       imgt:hasNumbering ?numbering.
+  ?numbering rdfs:label ?Numbering .
+
+  ?related_taxon rdfs:label ?Related_Taxon .
+  
+} 

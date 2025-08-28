@@ -1,5 +1,6 @@
-/* Déclarations globales (CDN) */
-declare const vis: any;
+/* eslint-disable */
+/* Déclaration du global vis (fourni par le CDN vis-network UMD) */
+declare var vis: any;
 
 /* ===================== Gene ===================== */
 var genedot = `digraph G {
@@ -24,17 +25,15 @@ edge [fontsize=14, color="#16db93"]
 ":Allele" -> "faldo:Region" [label=":isInRefSequence"]
 }`;
 
-var container = document.getElementById("genenetwork") as any;
+var container = document.getElementById("genenetwork") as HTMLElement | null;
 var options = {
   physics: {
     stabilization: false,
-    barnesHut: {
-      springLength: 250,
-    },
+    barnesHut: { springLength: 250 },
   },
 };
 var data = vis.parseDOTNetwork(genedot);
-var network = new vis.Network(container, data, options);
+if (container) { var network = new vis.Network(container, data, options); }
 
 /* ===================== Locus ===================== */
 var locusdot = `digraph G {
@@ -52,17 +51,15 @@ edge [fontsize=13, color="#16db93"]
 "obo:SO_0001248" -> "obo:NCIT_C164455" [label="obo:SWO_0004000"] 
 }`;
 
-var container = document.getElementById("locusnetwork") as any;
-var options = {
+var container2 = document.getElementById("locusnetwork") as HTMLElement | null;
+var options2 = {
   physics: {
     stabilization: false,
-    barnesHut: {
-      springLength: 250,
-    },
+    barnesHut: { springLength: 250 },
   },
 };
-var data = vis.parseDOTNetwork(locusdot);
-var network = new vis.Network(container, data, options);
+var data2 = vis.parseDOTNetwork(locusdot);
+if (container2) { var network2 = new vis.Network(container2, data2, options2); }
 
 /* ===================== Sequence ===================== */
 var seqdot = `digraph G {
@@ -83,22 +80,20 @@ edge [fontsize=14, color="#16db93"]
 "faldo:Region" -> ":PartialityType" [label=":partiality"]
 "faldo:Region" -> ":ImgtLabel" [label=":hasImgtLabel"]
 "faldo:Region" -> "faldo:ExactPosition" [label="faldo:location"]
-/*"faldo:\ExactPosition" -> "end ^^xsd:int" [label="obo:GENO_0000895"]#end
-"faldo:\ExactPosition" -> "start ^^xsd:int" [label="obo:GENO_0000894"]#begin
+/*"faldo:\\ExactPosition" -> "end ^^xsd:int" [label="obo:GENO_0000895"]#end
+"faldo:\\ExactPosition" -> "start ^^xsd:int" [label="obo:GENO_0000894"]#begin
 */
 }`;
 
-var container = document.getElementById("seqnetwork") as any;
-var options = {
+var container3 = document.getElementById("seqnetwork") as HTMLElement | null;
+var options3 = {
   physics: {
     stabilization: false,
-    barnesHut: {
-      springLength: 250,
-    },
+    barnesHut: { springLength: 250 },
   },
 };
-var data = vis.parseDOTNetwork(seqdot);
-var network = new vis.Network(container, data, options);
+var data3 = vis.parseDOTNetwork(seqdot);
+if (container3) { var network3 = new vis.Network(container3, data3, options3); }
 
 /* ===================== Chain ===================== */
 var chaindot = `digraph G {
@@ -130,17 +125,15 @@ edge [fontsize=14, color="#16db93"]
 "obo:NCIT_C48795" -> "obo:CHEBI_33709"  [label=":hasAminoAcid"]
 }`;
 
-var container = document.getElementById("chainnetwork") as any;
-var options = {
+var container4 = document.getElementById("chainnetwork") as HTMLElement | null;
+var options4 = {
   physics: {
     stabilization: false,
-    barnesHut: {
-      springLength: 250,
-    },
+    barnesHut: { springLength: 250 },
   },
 };
-var data = vis.parseDOTNetwork(chaindot);
-var network = new vis.Network(container, data, options);
+var data4 = vis.parseDOTNetwork(chaindot);
+if (container4) { var network4 = new vis.Network(container4, data4, options4); }
 
 /* ===================== Structure ===================== */
 var structdot = `digraph G {
@@ -157,14 +150,12 @@ edge [fontsize=13, color="#16db93"]
 "obo:GENO_0000722" ->":OBTENTION" [label=":isObtainedFrom"]
 }`;
 
-var container = document.getElementById("structnetwork") as any;
-var options = {
+var container5 = document.getElementById("structnetwork") as HTMLElement | null;
+var options5 = {
   physics: {
     stabilization: false,
-    barnesHut: {
-      springLength: 250,
-    },
+    barnesHut: { springLength: 250 },
   },
 };
-var data = vis.parseDOTNetwork(structdot);
-var network = new vis.Network(container, data, options);
+var data5 = vis.parseDOTNetwork(structdot);
+if (container5) { var network5 = new vis.Network(container5, data5, options5); }
