@@ -5,8 +5,7 @@ import { ref } from 'vue'
 import { cpSync } from 'fs'
 
 /**
- * Charge un template SPARQL et injecte dynamiquement une clause VALUES.
- * Pour les requêtes dynamiques basées sur des entités sélectionnées.
+
  *
  * @param templateUrl - URL du fichier .rq contenant le template avec le marqueur __VALUES__
  * @param selectedEntities - Liste des entités sélectionnées, ex : [{ id: 'mAb_123' }, { id: 'Target_456' }]

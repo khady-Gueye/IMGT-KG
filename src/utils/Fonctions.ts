@@ -35,10 +35,10 @@ export interface Triple {
 
 export type NodeType =
   | 'mAb_Level'
-  | 'Target'
-  | 'Construct'
-  | 'MOA'
-  | 'Product'
+  | 'Target_level'
+  | 'Construct_level'
+  | 'Moa_level'
+  | 'Product_level'
   | 'defaultnode';
 
 /* ───────────────────────────────
@@ -46,11 +46,11 @@ export type NodeType =
    ─────────────────────────────── */
 export const COLORS: Record<NodeType, string> = {
   defaultnode : '#FF6B6B',
-  mAb_Level   : '#CC0000', // la couleur du mAb est la couleur rouge
-  Target      : '#FF00FF',
-  Construct   : '#0000FF',
-  MOA         : ' #FF6633 ',
-  Product     : ' #006600 ',  //Green
+  mAb_Level   : '#FF0000', // la couleur du mAb est la couleur rouge
+  Target_level      : '#FF00FF',
+  Construct_level   : '#0000FF',
+  Moa_level       : ' #40E0D0 ',
+  Product_level     : ' #008000 ',  //Green
 };
 
 /* ───────────────────────────────
@@ -146,7 +146,7 @@ export function replaceAllOccurrences(str: string): string {
 export function subjectNodeType(subject: string, relation: string): NodeType {
   // Typage par la relation pour les Target
   if (relation === 'imgt:isTargetOf') {
-    return 'Target';
+    return 'Target_level';
   }
   
   // Pour les autres types, on utilise d'abord le typage par URI
@@ -157,19 +157,19 @@ export function subjectNodeType(subject: string, relation: string): NodeType {
   
   // Sinon typage par la relation pour les autres types
   switch (relation) {
-    case 'imgt:isConstructOf'    : return 'Construct';
+    case 'imgt:isConstructOf'    : return 'Construct_level';
     case 'imgt:isProductOf'      :
     case 'imgt:isStudyProductOf' :
-    case 'imgt:isDecisionOf'     : return 'Product';
+    case 'imgt:isDecisionOf'     : return 'Product_level';
     default                      : return 'defaultnode';
   }
 }
 
 export function objectNodeType(relation: string): NodeType {
   switch (relation) {
-    case 'imgt:hasTarget'        : return 'Target';  // Ajout de la détection de Target côté objet
-    case 'imgt:hasStudyProduct'  : return 'Product';
-    case 'bao:BAO_0000196'       : return 'MOA';
+    case 'imgt:hasTarget'        : return 'Target_level';  // Ajout de la détection de Target côté objet
+    case 'imgt:hasStudyProduct'  : return 'Product_level';
+    case 'bao:BAO_0000196'       : return 'Moa_level';       // a MOA is a BAO_0000196
     default                      : return 'defaultnode';
   }
 }
@@ -187,13 +187,13 @@ function nodeTypeFct(uri: string): NodeType {
     return 'mAb_Level';
   }
   else if (uri.includes("imgt:Construct_")) {
-    return 'Construct';
+    return 'Construct_level';
   }
   else if (uri.includes("imgt:Product_")) {
-    return 'Product';
+    return 'Product_level';
   }
   else if (uri.includes("imgt:MOA_")) {
-    return 'MOA';
+    return 'Moa_level';
   }
   else {
     return 'defaultnode';
@@ -278,11 +278,11 @@ mabImages: Record<string, string> = {}
   // Troisième étape : traiter tous les triplets pour créer les nœuds et les arêtes
   triples.forEach(({ subject, relation, object }) => {
     // Détermination du type de sujet
-    const subjectType = targetNodes.has(subject) ? 'Target' : subjectNodeType(subject, relation);
+    const subjectType = targetNodes.has(subject) ? 'Target_level' : subjectNodeType(subject, relation);
     setNode(subject, nodeColor(subjectType));
     
     // Détermination du type d'objet
-    let objectType = targetNodes.has(object) ? 'Target' : objectNodeType(relation);
+    let objectType = targetNodes.has(object) ? 'Target_level' : objectNodeType(relation);
     if (objectType === 'defaultnode') {
       objectType = nodeTypeFct(object);
     }

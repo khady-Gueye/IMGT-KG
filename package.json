@@ -11,6 +11,7 @@
     "@amcharts/amcharts5": "^5.13.6",
     "@amcharts/amcharts5-fonts": "^5.0.1",
     "@amcharts/amcharts5-geodata": "^5.1.5",
+    "@mdi/js": "^7.4.47",
     "@triply/yasgui": "^4.2.28",
     "chroma-js": "^3.1.2",
     "core-js": "^3.8.3",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@mdi/font": "^7.4.47",
     "@types/node": "^22.15.3",
     "@types/nunjucks": "^3.2.6",
     "@types/papaparse": "^5.3.16",

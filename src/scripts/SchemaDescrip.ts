@@ -1,4 +1,5 @@
 /* eslint-disable */
+
 /* Déclaration du global vis (fourni par le CDN vis-network UMD) */
 declare var vis: any;
 
@@ -150,6 +151,7 @@ edge [fontsize=13, color="#16db93"]
 "obo:GENO_0000722" ->":OBTENTION" [label=":isObtainedFrom"]
 }`;
 
+
 var container5 = document.getElementById("structnetwork") as HTMLElement | null;
 var options5 = {
   physics: {
@@ -159,3 +161,60 @@ var options5 = {
 };
 var data5 = vis.parseDOTNetwork(structdot);
 if (container5) { var network5 = new vis.Network(container5, data5, options5); }
+
+
+/*===================== MABs ===================== */
+
+var mabdot =  `digraph G {
+  node [ shape=box fontsize=15 fontcolor=black color="#FFC996" style=filled]
+  edge [fontsize=13, color="#16db93"]
+  
+  ## mAB
+  "obo:NCIT_C1909" -> "obo:NCIT_C25402"  [label=":isLinkedToStructureAccessNumb"]
+  "obo:NCIT_C1909" -> ":Construct"  [label=":hasConstruct"]
+  "obo:NCIT_C1909" -> "obo:NCIT_C25702"  [label="sio:SIO_000291"]
+  "obo:NCIT_C1909" -> "obo:NCIT_C37925"  [label=":hasOriginClone"]
+  "obo:NCIT_C1909" -> "obo:NCIT_C146999"  [label="bao:BAO_0000196"]
+  "obo:NCIT_C1909" ->"obo:NCIT_C51980" [label=":hasProduct"]
+  "obo:NCIT_C1909" -> "obo:Mondo_000001" [label=":hasClinicalIndication"]
+  
+  ## Construct
+   ":Construct" -> ":ReceptorFormat" [label=":hasReceptorFormat"]
+   ":Construct" -> ":MolecularComponent" [label=":hasMolecularComponent"]
+   ":Construct" -> ":ImgtLabel" [label=":hasImgtLabel"]
+   ":Construct" -> "obo:NCIT_C13303" [label=":hasIMGTStructure"]
+   ":Segment" -> ":Construct"  [label="obo:BFO_0000050"]
+    ":Segment" -> ":ImgtLabel" [label=":hasImgtLabel"]
+  
+  
+  ## Product
+   "obo:NCIT_C51980" -> "obo:NCIT_C54131" [label=":isProducedBy"]
+    "obo:NCIT_C51980" -> "obo:NCIT_C17471" [label=":hasStudyProduct"]
+    "obo:NCIT_C17471" -> "obo:Mondo_000001" [label=":hasClinicalIndication"]
+    "obo:NCIT_C17471" -> "ocre:OCRE100038" [label=":hasClinicalPhase"]
+    "obo:NCIT_C17471" -> ":ExpressionSystem" [label=":hasExpressionSystem"]
+    "obo:NCIT_C53285" -> "obo:NCIT_C17471" [label=":isDecisionOf"]
+    "obo:NCIT_C53285" -> "obo:NCIT_C25688" [label=":hasStatut"]
+    "obo:NCIT_C53285" -> "obo:NCIT_C25688" [label=":hasDesignation"]
+    "obo:NCIT_C53285" -> ":Organisation" [label=":isDecidedBy"]
+  
+    
+    ## MOA
+    "obo:NCIT_C146999" -> "obo:NCIT_C25492"  [label="wiki:Property:P1542"]
+    "obo:NCIT_C146999" -> "obo:NCIT_C25343"  [label=":hasMechanism"]
+    "obo:NCIT_C146999" -> "bibo:Article"  [label=":hasBibliographyReference"]
+      "obo:NCIT_C146999" -> ":ClinicalDomain"  [label=":hasClinicalDomain"]
+    
+  }`;
+
+
+  var container6 = document.getElementById("mabnetwork") as HTMLElement | null;
+var options6 = {
+  physics: {
+    stabilization: false,
+    barnesHut: { springLength: 250 },
+  },
+};
+var data6 = vis.parseDOTNetwork(mabdot);
+if (container6) { var network5 = new vis.Network(container6, data6, options6); }
+  

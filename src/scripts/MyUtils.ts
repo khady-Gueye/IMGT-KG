@@ -1,3 +1,14 @@
+
+// Au tout début du fichier, selon le besoin :
+declare const vis: any;                    // pour SchemaDescrip.ts
+declare const am5: any;                    // pour *chart* fichiers
+declare const am5xy: any;
+declare const am5percent: any;
+declare const am5themes_Animated: any;
+
+
+
+
 /* eslint-disable */
 
 // On attache les fonctions au window pour conserver le même usage global

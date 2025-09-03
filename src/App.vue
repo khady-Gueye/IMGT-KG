@@ -1,13 +1,17 @@
 <template>
+   <v-app id="inspire">
   <AppHeader />
   <TabsNavigation
     :tabs="tabs"
     :currentTab="currentTab"
     @change-tab="currentTab = $event"
   />
+  <v-main>
   <main class="main-content">
     <component :is="currentView" @jump-to-explore="onJumpToExplore"/>
   </main>
+</v-main>
+</v-app>
 </template>
 
 <script setup lang="ts">
@@ -24,9 +28,9 @@ import { nextTick } from 'vue'
 // Définition des onglets
 const tabs = [
   { id: 'home', label: 'Home', component: HomeCover },
-  { id: 'explore', label: 'Explore', component: GraphWorkspace },
-  { id: 'kgDesc', label: 'IMGT-KG-DESCRIPTION', component: KgDesc }, // 
-  { id: 'access', label: 'IMGT-KG Access',      component: AccessWorkspace }, // ⬅️ NEW
+  { id: 'explore', label: 'Exploration', component: GraphWorkspace },
+  { id: 'kgDesc', label: 'Description', component: KgDesc }, // 
+  { id: 'access', label: 'Access',      component: AccessWorkspace }, // ⬅️ NEW
 ]
 
 const currentTab = ref('home')

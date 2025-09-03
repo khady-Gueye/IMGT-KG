@@ -1,158 +1,116 @@
 <template>
+  
+  <!-- BARRE LATERALE (pliable) -->
   <div class="kg-layout">
-    <!-- BARRE LATERALE -->
-    <SidebarNav
-      :navItems="navItems"
-      :currentNav="currentNav"
-      @select-nav="handleNav"
-    >
-      <SidebarFilters
-        :entityTypes="allNodeTypes"
-        :selectedTypes="selectedTypes"
-        :showRelations="showRelationLabels"
-        @update:selectedTypes="selectedTypes = $event"
-        @update:showRelations="showRelationLabels = $event"
-        :focusType="focusType"
-        @update:focusType="handleFocusTypeChange"
+    <!-- BARRE LATERALE (pliable) -->
+    <div class="kg-sidebar" :class="{ collapsed }">
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        class="collapse-handle"
+        @click="collapsed = !collapsed"
+        :aria-expanded="!collapsed"
+        :title="collapsed ? 'Déplier' : 'Replier'"
+      >
+        <v-icon :icon="collapsed ? 'mdi-chevron-right' : 'mdi-chevron-left'" />
+      </v-btn>
+
+      <SidebarNav
+  :navItems="navItems"
+  :currentNav="currentNav"
+  @select-nav="handleNav"
+>
+  <SidebarFilters
+    v-if="currentNav === 'imgt-mab-kg'"
+    :entityTypes="allNodeTypes"
+    :selectedTypes="selectedTypes"
+    :showRelations="showRelationLabels"
+    @update:selectedTypes="selectedTypes = $event"
+    @update:showRelations="showRelationLabels = $event"
+    :focusType="focusType"
+    @update:focusType="handleFocusTypeChange"
+  />
+</SidebarNav>
+    </div>
+
+ <!-- ZONE CENTRALE -->
+<main class="kg-main">
+  <h2 class="active-tab-title">
+    {{ navItems.find(item => item.id === currentNav)?.label || '' }}
+  </h2>
+  <p class="tab-subtitle">
+    {{ tabSubtitles[currentNav] || '' }}
+  </p>
+
+  <!-- ======== SECTION IMGT-MAB-KG UNIQUEMENT ======== -->
+  <template v-if="currentNav === 'imgt-mab-kg'">
+    <h1 class="centered-title">Exploration Centered on {{ focusTypeLabel }}</h1>
+
+    <div class="search-bar-center">
+      <multiselect
+        v-if="currentExplorationConfig"
+        v-model="currentExplorationConfig.selectedRef.value"
+        :options="currentExplorationConfig.optionsRef.value"
+        :multiple="true"
+        :searchable="true"
+        :placeholder="`Sélectionnez un ou plusieurs ${currentExplorationConfig.label}`"
+        label="label"
+        track-by="id"
+        :close-on-select="false"
       />
-    </SidebarNav>
+    </div>
 
-    <!-- ZONE CENTRALE -->
-    <main class="kg-main">
+    <GraphDisplay
+      v-if="filteredResults.length"
+      :triples="filteredResults"
+      :showRelations="showRelationLabels"
+      @node-click="handleShowDoc"
+    />
 
-         <!-- Introduction -->
-
-          <v-row>
-  <v-col>
-    <v-expansion-panels v-model="introOpen">
-      <v-expansion-panel>
-        <v-expansion-panel-title>
-          <span class="text-h6">About IMGT/MAB-KG & Data model</span>
-        </v-expansion-panel-title>
-
-        <v-expansion-panel-text>
-          <!-- ⬇️ on garde ton contenu tel quel, enveloppé dans un card pour le style -->
-          <v-card class="mx-auto" title="">
-            <div class="title text-h5 text-center p-20">
-              <strong>IMGT/MAB-KG</strong>, the IMGT-KG for monoclonal antibodies
-            </div>
-            <v-card-item>
-              <div class="text-body-2">
-                <p>
-                  Monoclonal antibodies (mAbs) are proteins made in the laboratory that act as natural antibodies.
-                  They bind specifically to certain targets in the body and stimulate the immune system. The mechanisms of action of mAbs range from detection and destruction of target cells,
-                  stimulation of immune-mediated cell toxicity, to modulation of the immune system. The mAbs can also carry drugs or radiation to efficiently deliver cell-killing agents to target cells. 
-                  In order to provide a unique and valuable resource concerning mAbs with therapeutic application, <strong>IMGT&reg;</strong> has developed IMGT/mAb-DB, a database which contains standardized descriptions about mAbs, 
-                  their targets, clinical indications and other characteristics.
-                  <br>From an immunogenetics data integration perspective, we built the first FAIR immunogenetics knowledge graph, <strong>IMGT Knowledge graph (IMGT-KG)</strong> to bridge the gap between nucleotide and protein sequences of
-                  IMGT® databases. In this same perspective, we built <strong>IMGT/MAB-KG</strong>, the IMGT-KG for therapeutic monoclonal antibodies, using semantic web standards and technologies. 
-                  <strong>IMGT/MAB-KG</strong> is a specific part of IMGT-KG that represents, describes and structures all knowledge of therapeutic mAbs.
-                  It is intrinsically connected to the IMGT-KG and reuses terms and relationships from
-                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#">NCIT</a></v-chip>,
-                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://mondo.monarchinitiative.org/">MONDO</a></v-chip>
-                  and from some resources of the Open Biological and Biomedical Ontology
-                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://obofoundry.org/">OBO</a></v-chip>.
-                </p>
-
-                <p>
-                  The data model is built as an extended version of IMGT-ONTOLOGY, described in our previous
-                  <v-chip class="ma-0 v-chip-link" color="primary" label><a href="https://iswc2022.semanticweb.org/wp-content/uploads/2022/11/978-3-031-19433-7_36.pdf">publication</a></v-chip>.
-                  Here, we describe only the core elements including concepts and object properties. The data model of <strong>IMGT/MAB-KG</strong> presents several parts, the core element is the monoclonal antibody represented by a pharmacological substance and an INN molecule (International nonproprietary names). 
-                  The INN molecule is associated with a receptor that binds to a target, which belongs to a taxon, has a construct which has one or many segments. The construct and its segments have an IMGT label. 
-                  It also has bibliographical references, a clinical domain, a mechanism of action and its effects. The Pharmacological Substance may have a biosimilar, an origin clone and an associated product. 
-                  The monoclonal antibody product is produced by a company and has one or more clinical trials. Every clinical trial has a clinical phase and a clinical indication for a disease, which belongs to a clinical domain.
-                  A clinical trial can be the subject of a decision by an organization with a final status. The pharmacological Substance may be linked to <strong>IMGT-KG</strong> 3D structures elements.
-                </p>
-
-                <p>
-                  For more information on the data model, please read our publication
-                  <a href="https://www.frontiersin.org/journals/immunology/articles/10.3389/fimmu.2024.1393839/full">
-                    IMGT/mAb-KG: the knowledge graph for therapeutic monoclonal antibodies
-                  </a>.
-                </p>
-              </div>
-            </v-card-item>
-          </v-card>
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
-  </v-col>
-</v-row>
-
-       
-
-
-     
-
-      <h2 class="active-tab-title">
-        {{ navItems.find(item => item.id === currentNav)?.label || '' }}
-      </h2>
-      <p class="tab-subtitle">
-        {{ tabSubtitles[currentNav] || '' }}
-      </p>
-
-      <h1 class="centered-title">Exploration Centered on {{ focusTypeLabel }}</h1>
-
-      <div class="search-bar-center">
-        <multiselect
-          v-if="currentExplorationConfig"
-          v-model="currentExplorationConfig.selectedRef.value"
-          :options="currentExplorationConfig.optionsRef.value"
-          :multiple="true"
-          :searchable="true"
-          :placeholder="`Sélectionnez un ou plusieurs ${currentExplorationConfig.label}`"
-          label="label"
-          track-by="id"
-          :close-on-select="false"
-        />
+    <!-- Tableau des résultats -->
+    <div class="table-section" v-if="filteredResults.length">
+      <div class="section-header" @click="toggleTableDropdown">
+        <h4>
+          Data Table 
+          <span class="dropdown-arrow" :class="{ 'open': showTable }">▼</span>
+        </h4>
       </div>
-
-      <GraphDisplay
-        v-if="filteredResults.length && currentNav === 'imgt-mab-kg'"
-        :triples="filteredResults"
-        :showRelations="showRelationLabels"
-        @node-click="handleShowDoc"
-      />
-
-      <!-- Dropdown pour le tableau -->
-      <div class="table-section" v-if="filteredResults.length">
-        <div class="section-header" @click="toggleTableDropdown">
-          <h4>
-            Data Table 
-            <span class="dropdown-arrow" :class="{ 'open': showTable }">▼</span>
-          </h4>
-        </div>
-        
-        <div class="dropdown-content" v-show="showTable">
-          <div class="results-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Relation</th>
-                  <th>Object</th>
-                  <th>Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="result in filteredResults" :key="result.subject + '-' + result.relation + '-' + result.object">
-                  <td>{{ result.subject }}</td>
-                  <td>{{ result.relation }}</td>
-                  <td>{{ result.object }}</td>
-                  <td>{{ result.type }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <div class="dropdown-content" v-show="showTable">
+        <div class="results-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Relation</th>
+                <th>Object</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in filteredResults" :key="r.subject + '-' + r.relation + '-' + r.object">
+                <td>{{ r.subject }}</td>
+                <td>{{ r.relation }}</td>
+                <td>{{ r.object }}</td>
+                <td>{{ r.type }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
 
-      <div v-if="currentNav === 'imgt-kg'" style="text-align:center; margin-top:3rem;">
-        <h2>IMGT-KG (à venir)</h2>
-      </div>
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+  </template>
 
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    </main>
+  <!-- ======== SECTION IMGT-KG (placeholder pour l’instant) ======== -->
+  <template v-else>
+    <div style="text-align:center; margin-top:3rem;">
+      <h2>IMGT-KG (à venir)</h2>
+    </div>
+  </template>
+</main>
+
 
     <DocumentationDrawer
       :visible="drawerVisible"
@@ -170,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed, watch, Ref } from 'vue'
 import SidebarNav from './SidebarNav.vue'
 import SidebarFilters from './SidebarFilters.vue'
 import GraphDisplay from '../shared/GraphDisplay.vue'
@@ -188,6 +146,14 @@ import DocumentationDrawer from './DocumentationDrawer.vue'
 import { fetchDocData } from '@/utils/Fonctions'
 import { storeToRefs } from 'pinia'
 import { useExploreStore } from '@/store/explore'
+
+const collapsed = ref(false)
+
+
+
+
+
+
 // import imgUrl from '@/assets/IMGT-MAB-KG-DESC.jpg'
 /* eslint-disable */
 // Types
@@ -213,7 +179,7 @@ const navItems = [
   { id: 'imgt-kg', label: 'IMGT-KG' }
 ]
 
-const tabSubtitles = {
+const tabSubtitles: Record<string, string> = {
   // 'imgt-mab-kg': 'Knowledge Graph for Monoclonal Antibodies',
   'imgt-kg': 'Integrated Immunogenetics Knowledge Graph (coming soon)'
 }
@@ -340,8 +306,7 @@ function handleFocusTypeChange(newFocus: FocusType) {
   
   // Charge les options pour le nouveau type
   loadOptionsForFocusType(newFocus)
-  
-  // Efface les résultats précédents
+
   results.value = []
   allNodeTypes.value = []
   selectedTypes.value = []
@@ -530,18 +495,13 @@ async function applyQuickFilter(entity: string) {
     handleFocusTypeChange(ft) // reset sélections, résultats, etc.
   }
 
-  // ⚠️ S’assure que les options du focus courant sont bien chargées
   await loadOptionsForFocusType(ft)
 
-  // ✅ Pré-sélectionne les 3 premiers éléments pour afficher un graphe tout de suite
   const cfg = explorationConfigs[ft]
   if (cfg?.optionsRef.value.length) {
     cfg.selectedRef.value = [cfg.optionsRef.value[0]]
 
-    // Tu as déjà un watcher qui lance search() quand selectedX change.
-    // Donc l’appel explicite n’est pas obligatoire.
-    // Si tu préfères forcer ici, décommente :
-    // await search()
+
   }
 }
 
@@ -680,5 +640,69 @@ watch(selectedEntity, async (val) => {
   font-size: 1.1rem;
   margin-bottom: 1.2rem;
   font-style: italic;
+}/* ---- Layout principal ---- */
+.kg-layout {
+  display: flex;
+  min-height: 100vh;
 }
+
+/* ---- Sidebar pliable ---- */
+.kg-sidebar {
+  position: relative;
+  width: 320px;       /* largeur ouverte */
+  min-width: 320px;
+  transition: width .25s ease;
+  border-right: 1px solid #eee;
+  background: #fff;
+  overflow: hidden;   /* masque le contenu quand c'est plié */
+  z-index: 1;
+}
+
+/* Forcer le contenu interne à s’adapter */
+.kg-sidebar {
+  position: relative;
+  padding-top: 44px;          /* espace pour la flèche en haut */
+}
+
+/* Mode rail plié */
+.kg-sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+/* Au survol on “déploie” visuellement (comme un rail expand-on-hover) */
+.kg-sidebar.collapsed:hover {
+  width: 320px;
+  min-width: 320px;
+}
+
+/* Optionnel : masque totalement le contenu en mode plié */
+.kg-sidebar.collapsed > *:not(.collapse-handle) {
+  opacity: 0;
+  pointer-events: none;
+}
+  .kg-sidebar.collapsed:hover > *:not(.collapse-handle) {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Poignée de repli */
+.collapse-handle {
+  position: absolute;
+  top: 8px;                   /* en haut */
+  right: 8px;                 /* à droite */
+  transform: none;            /* plus de centrage vertical */
+  z-index: 3;                 /* au-dessus du contenu */
+  background: #fff;           /* optionnel: petit fond pour lisibilité */
+  border-radius: 999px;       /* optionnel */
+}
+.kg-sidebar:hover .collapse-handle { opacity: 1; }
+
+/* ---- Zone centrale ---- */
+.kg-main {
+  flex: 1;
+  background: #fff;
+  padding: 2rem 3rem;
+  overflow-y: auto;
+}
+
 </style>

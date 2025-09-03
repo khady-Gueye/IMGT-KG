@@ -61,9 +61,9 @@ const emit = defineEmits(['update:selectedTypes', 'update:showRelations', 'updat
 
 // Options focusType disponibles
 const focusOptions = [
-  { label: 'Monoclonal Antibody', value: 'mAb' },
-  { label: 'Target', value: 'Target' },
-  { label: 'Mode of Action', value: 'MOA' },
+  { label: 'Exploration Centered to MAB', value: 'mAb' },
+  { label: 'Exploration Centered to Target', value: 'Target' },
+  { label: 'Exploration Centered to MOA', value: 'MOA' },
 ]
 // Pour le multiselect, on stocke l'objet complet
 const localFocusType = ref(
@@ -114,7 +114,7 @@ function getColor(type: string) {
 }
 
 .sidebar-title {
-  color: #d7263d;
+  color: #333;
   font-size: 1.3rem;
   margin-bottom: 1.5rem;
 }
